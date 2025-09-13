@@ -1,6 +1,7 @@
 {
-  "name": "hkt-assign-attendance-template",
-  "version": "0.1.0",
+  "name": "haas",
+  "version": "1.0.0",
+  "displayName": "HAAS - HKT Assign & Attendance System",
   "private": true,
   "scripts": {
     "dev": "next dev",
