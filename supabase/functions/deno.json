@@ -1,6 +1,0 @@
-{
-  "tasks": {},
-  "imports": {
-    "qrcode": "npm:qrcode"
-  }
-}

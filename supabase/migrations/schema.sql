@@ -22,6 +22,28 @@ create table if not exists public.roles (
   label text
 );
 
+-- 機材テーブル（物理QRコード管理）
+create table if not exists public.equipment (
+  id uuid primary key default gen_random_uuid(),
+  venue_id uuid not null references public.venues(id) on delete cascade,
+  name text not null,
+  qr_code text unique not null,
+  equipment_type text check (equipment_type in ('lighting','sound','rigging','stage','other')),
+  location_hint text,
+  active boolean default true,
+  created_at timestamptz default now()
+);
+
+-- ユーザー権限テーブル
+create table if not exists public.user_roles (
+  id uuid primary key default gen_random_uuid(),
+  staff_id uuid not null references public.staff(id) on delete cascade,
+  role text not null check (role in ('admin','manager','staff')),
+  granted_at timestamptz default now(),
+  granted_by uuid references public.staff(id),
+  unique(staff_id, role)
+);
+
 create table if not exists public.events (
   id uuid primary key default gen_random_uuid(),
   venue_id uuid not null references public.venues(id) on delete cascade,
@@ -90,13 +112,11 @@ create table if not exists public.attendances (
   check_in_ts timestamptz,
   check_in_lat double precision,
   check_in_lon double precision,
-  check_in_photo_url text,
-  check_in_qr_token text,
+  check_in_equipment_qr text,
   check_out_ts timestamptz,
   check_out_lat double precision,
   check_out_lon double precision,
-  check_out_photo_url text,
-  check_out_qr_token text,
+  check_out_equipment_qr text,
   status attendance_status default 'pending',
   reviewer_id uuid,
   review_comment text,
@@ -115,19 +135,7 @@ create table if not exists public.expenses (
   created_at timestamptz default now()
 );
 
-do $$ begin
-  create type qr_purpose as enum ('checkin','checkout');
-exception when duplicate_object then null; end $$;
-
-create table if not exists public.qr_tokens (
-  id uuid primary key default gen_random_uuid(),
-  shift_id uuid not null references public.shifts(id) on delete cascade,
-  token text not null unique,
-  purpose qr_purpose not null,
-  issued_for_date date not null,
-  expires_at timestamptz not null,
-  created_at timestamptz default now()
-);
+-- qr_tokens table removed (using physical equipment QR instead)
 
 create table if not exists public.audit_logs (
   id bigserial primary key,
