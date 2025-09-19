@@ -43,52 +43,55 @@ export default function PunchPage() {
         setMessage('⚠️ HTTPSでアクセスするか、位置情報の許可を確認してください')
         console.warn('GPS may not work properly over HTTP. Consider using HTTPS or localhost.')
       }
-      
+
       setMessage('📍 位置情報を取得中...')
-      
+
+      // GPS取得のオプションを調整
+      const gpsOptions: PositionOptions = {
+        enableHighAccuracy: true,  // 高精度モードを有効化
+        timeout: 30000,  // タイムアウトを30秒に延長
+        maximumAge: 0  // キャッシュを使わず最新の位置を取得
+      }
+
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          setCoords({ 
-            lat: pos.coords.latitude, 
-            lon: pos.coords.longitude 
+          setCoords({
+            lat: pos.coords.latitude,
+            lon: pos.coords.longitude
           })
           setMessage(`📍 位置情報取得完了 (精度: ${Math.round(pos.coords.accuracy)}m)`)
         },
         (err) => {
           console.error('GPS Error:', err)
           let errorMessage = 'GPS取得エラー'
-          
+
           switch(err.code) {
             case err.PERMISSION_DENIED:
-              errorMessage = '位置情報の使用が拒否されました。ブラウザの設定を確認してください'
+              errorMessage = '位置情報の使用が拒否されました。\n\n【設定方法】\n• Safari: 設定 > Safari > 位置情報 > 許可\n• Chrome: サイト設定から位置情報を許可'
               break
             case err.POSITION_UNAVAILABLE:
-              errorMessage = '位置情報が取得できません。GPS/位置情報サービスを有効にしてください'
+              errorMessage = '位置情報が取得できません。\n\n【確認事項】\n• 位置情報サービスがONか確認\n• Wi-Fi/モバイルデータがONか確認'
               break
             case err.TIMEOUT:
-              errorMessage = 'タイムアウト。もう一度お試しください'
+              errorMessage = 'タイムアウトしました。\n\n【対処法】\n• 屋外や窓際で再試行\n• Wi-FiをONにして再試行'
               break
             default:
               errorMessage = err.message
           }
-          
+
           setMessage(`⚠️ ${errorMessage}`)
-          
+
           // デバッグ用：手動で位置を設定できるオプション
-          if (window.confirm('GPS取得に失敗しました。テスト用の位置情報を使用しますか？')) {
+          if (window.confirm('GPS取得に失敗しました。テスト用の位置情報を使用しますか？\n\n※本番運用時はGPS取得が必須です')) {
             // 八王子駅の座標をセット
-            setCoords({ 
-              lat: 35.6555, 
-              lon: 139.3389 
+            setCoords({
+              lat: 35.6555,
+              lon: 139.3389
             })
             setMessage('📍 テスト位置（八王子駅）を使用中')
           }
         },
-        { 
-          enableHighAccuracy: false,  // HTTPでは高精度が使えない場合がある
-          timeout: 15000,  // タイムアウトを延長
-          maximumAge: 30000  // 30秒前までの位置情報を許可
-        }
+        gpsOptions
       )
     } catch (error) {
       setMessage(`⚠️ ${error}`)
