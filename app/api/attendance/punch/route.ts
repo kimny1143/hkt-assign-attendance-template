@@ -67,17 +67,23 @@ export async function POST(req: NextRequest) {
   }
 
   // GPS距離検証（±300m）
-  const distance = calculateDistance(lat, lon, equipment.venues.lat, equipment.venues.lon)
+  const venueData = Array.isArray(equipment.venues) ? equipment.venues[0] : equipment.venues
+  const distance = calculateDistance(lat, lon, venueData.lat, venueData.lon)
   if (distance > 300) {
     return NextResponse.json({ error: `Too far from venue: ${Math.round(distance)}m` }, { status: 400 })
   }
 
-  // 今日のシフトを取得
+  // 今日のシフトを取得（機材がある会場のイベントから）
   const today = new Date().toISOString().split('T')[0]
   const { data: shift, error: shiftError } = await supabase
     .from('shifts')
-    .select('id')
-    .eq('event_id', equipment.venue_id)
+    .select(`
+      id,
+      events!inner(
+        venue_id
+      )
+    `)
+    .eq('events.venue_id', equipment.venue_id)
     .gte('start_ts', `${today}T00:00:00`)
     .lte('start_ts', `${today}T23:59:59`)
     .single()

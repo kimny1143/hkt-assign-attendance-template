@@ -153,46 +153,46 @@ alter table public.expenses     enable row level security;
 alter table public.assignments  enable row level security;
 alter table public.staff        enable row level security;
 
-create or replace policy att_read_own on public.attendances
+create policy att_read_own on public.attendances
 for select using (
   exists(select 1 from public.staff s where s.id = staff_id and s.user_id = auth.uid())
 );
 
-create or replace policy att_ins_own on public.attendances
+create policy att_ins_own on public.attendances
 for insert with check (
   exists(select 1 from public.staff s where s.id = staff_id and s.user_id = auth.uid())
 );
 
-create or replace policy att_upd_own on public.attendances
+create policy att_upd_own on public.attendances
 for update using (
   exists(select 1 from public.staff s where s.id = staff_id and s.user_id = auth.uid())
 );
 
-create or replace policy exp_read_own on public.expenses
+create policy exp_read_own on public.expenses
 for select using (
   exists(select 1
          from public.attendances a join public.staff s on s.id=a.staff_id
          where a.id = expenses.attendance_id and s.user_id = auth.uid())
 );
-create or replace policy exp_ins_own on public.expenses
+create policy exp_ins_own on public.expenses
 for insert with check (
   exists(select 1
          from public.attendances a join public.staff s on s.id=a.staff_id
          where a.id = attendance_id and s.user_id = auth.uid())
 );
 
-create or replace policy admin_all_att on public.attendances
+create policy admin_all_att on public.attendances
 for all using (auth.jwt() ->> 'role' = 'admin');
 
-create or replace policy admin_all_exp on public.expenses
+create policy admin_all_exp on public.expenses
 for all using (auth.jwt() ->> 'role' = 'admin');
 
-create or replace policy admin_all_assign on public.assignments
+create policy admin_all_assign on public.assignments
 for all using (auth.jwt() ->> 'role' = 'admin');
 
-create or replace policy staff_self on public.staff
+create policy staff_self on public.staff
 for select using (user_id = auth.uid());
-create or replace policy admin_staff on public.staff
+create policy admin_staff on public.staff
 for all using (auth.jwt() ->> 'role' = 'admin');
 
 -- === View for CSV ===

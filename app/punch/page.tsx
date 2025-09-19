@@ -1,66 +1,303 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function PunchPage() {
-  const [qrToken, setQrToken] = useState('')
-  const [photoUrl, setPhotoUrl] = useState<string>('')
-  const [coords, setCoords] = useState<{ lat:number; lon:number }|null>(null)
-  const [shiftId, setShiftId] = useState('')
+  const [equipmentQr, setEquipmentQr] = useState('')
+  const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+  const [scannerActive, setScannerActive] = useState(false)
+  const [user, setUser] = useState<any>(null)
+  const router = useRouter()
 
-  const grabGPS = async () =>
-    new Promise<void>((resolve, reject) => {
-      if (!navigator.geolocation) return reject(new Error('geolocation not supported'))
-      navigator.geolocation.getCurrentPosition(
-        (pos) => { setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude }); resolve(); },
-        (err) => reject(err),
-        { enableHighAccuracy: true, timeout: 10000 }
-      )
-    })
+  // 認証チェックとGPS自動取得
+  useEffect(() => {
+    checkAuth()
+    grabGPS()
+  }, [])
 
-  const uploadPhoto = async (file: File) => {
-    // 実運用では Supabase Storage にアップロード & 署名URL取得に置換
-    const blobUrl = URL.createObjectURL(file)
-    setPhotoUrl(blobUrl)
+  const checkAuth = async () => {
+    try {
+      const res = await fetch('/api/auth/me')
+      if (!res.ok) {
+        router.push('/login')
+        return
+      }
+      const data = await res.json()
+      setUser(data.user)
+    } catch (error) {
+      router.push('/login')
+    }
   }
 
+  const grabGPS = async () => {
+    try {
+      if (!navigator.geolocation) {
+        throw new Error('GPS非対応のブラウザです')
+      }
+      
+      // HTTPでのアクセスかチェック
+      if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+        setMessage('⚠️ HTTPSでアクセスするか、位置情報の許可を確認してください')
+        console.warn('GPS may not work properly over HTTP. Consider using HTTPS or localhost.')
+      }
+      
+      setMessage('📍 位置情報を取得中...')
+      
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setCoords({ 
+            lat: pos.coords.latitude, 
+            lon: pos.coords.longitude 
+          })
+          setMessage(`📍 位置情報取得完了 (精度: ${Math.round(pos.coords.accuracy)}m)`)
+        },
+        (err) => {
+          console.error('GPS Error:', err)
+          let errorMessage = 'GPS取得エラー'
+          
+          switch(err.code) {
+            case err.PERMISSION_DENIED:
+              errorMessage = '位置情報の使用が拒否されました。ブラウザの設定を確認してください'
+              break
+            case err.POSITION_UNAVAILABLE:
+              errorMessage = '位置情報が取得できません。GPS/位置情報サービスを有効にしてください'
+              break
+            case err.TIMEOUT:
+              errorMessage = 'タイムアウト。もう一度お試しください'
+              break
+            default:
+              errorMessage = err.message
+          }
+          
+          setMessage(`⚠️ ${errorMessage}`)
+          
+          // デバッグ用：手動で位置を設定できるオプション
+          if (window.confirm('GPS取得に失敗しました。テスト用の位置情報を使用しますか？')) {
+            // 八王子駅の座標をセット
+            setCoords({ 
+              lat: 35.6555, 
+              lon: 139.3389 
+            })
+            setMessage('📍 テスト位置（八王子駅）を使用中')
+          }
+        },
+        { 
+          enableHighAccuracy: false,  // HTTPでは高精度が使えない場合がある
+          timeout: 15000,  // タイムアウトを延長
+          maximumAge: 30000  // 30秒前までの位置情報を許可
+        }
+      )
+    } catch (error) {
+      setMessage(`⚠️ ${error}`)
+      console.error('GPS initialization error:', error)
+    }
+  }
+
+  // QRコードスキャン（カメラ使用）
+  const startQrScan = async () => {
+    try {
+      // 実際の実装では、QRスキャナーライブラリ（例：html5-qrcode）を使用
+      // ここではデモ用に手動入力
+      setScannerActive(true)
+      setMessage('📷 QRコードをスキャンしてください')
+    } catch (error) {
+      setMessage(`⚠️ カメラアクセスエラー`)
+    }
+  }
+
+  // 打刻処理
   const submit = async (purpose: 'checkin' | 'checkout') => {
-    if (!shiftId || !qrToken || !photoUrl || !coords) { alert('不足項目があります'); return; }
-    const res = await fetch('/api/attendance/punch', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        shift_id: shiftId,
-        lat: coords.lat,
-        lon: coords.lon,
-        qr_token: qrToken,
-        photo_url: photoUrl,
-        purpose
+    if (!equipmentQr) {
+      setMessage('⚠️ QRコードをスキャンしてください')
+      return
+    }
+    
+    if (!coords) {
+      setMessage('⚠️ GPS情報を取得中です...')
+      await grabGPS()
+      return
+    }
+
+    setLoading(true)
+    setMessage('🔄 打刻処理中...')
+
+    try {
+      const res = await fetch('/api/attendance/punch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          equipment_qr: equipmentQr,
+          lat: coords.lat,
+          lon: coords.lon,
+          purpose
+        })
       })
-    })
-    const json = await res.json()
-    if (!res.ok) alert(json.error || 'エラー')
-    else alert('打刻OK')
+
+      const json = await res.json()
+      
+      if (!res.ok) {
+        setMessage(`❌ ${json.error || '打刻エラー'}`)
+      } else {
+        setMessage(
+          purpose === 'checkin' 
+            ? '✅ 出勤打刻完了！' 
+            : '✅ 退勤打刻完了！'
+        )
+        // 成功後、QRコードをクリア
+        setTimeout(() => {
+          setEquipmentQr('')
+          setMessage('')
+        }, 3000)
+      }
+    } catch (error) {
+      setMessage(`❌ ネットワークエラー: ${error}`)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <main className="p-4 space-y-4">
-      <h1 className="text-xl font-bold">出退勤打刻デモ</h1>
+    <main className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-md mx-auto">
+        {/* ヘッダー */}
+        <div className="bg-black text-white p-4 rounded-t-lg">
+          <h1 className="text-2xl font-bold text-center">HAAS</h1>
+          <p className="text-center text-sm mt-1">打刻システム</p>
+          {user && (
+            <p className="text-center text-xs mt-2 text-gray-300">
+              {user.name} でログイン中
+            </p>
+          )}
+        </div>
 
-      <input className="border p-2 w-full" placeholder="シフトID" value={shiftId} onChange={e=>setShiftId(e.target.value)} />
-      <textarea className="border p-2 w-full" placeholder="QRトークン" value={qrToken} onChange={e=>setQrToken(e.target.value)} />
+        <div className="bg-white rounded-b-lg shadow-lg p-6 space-y-6">
+          {/* GPS状態 */}
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-semibold">📍 GPS状態</span>
+              <button 
+                onClick={grabGPS}
+                className="text-blue-600 text-sm hover:underline"
+              >
+                再取得
+              </button>
+            </div>
+            {coords ? (
+              <div className="text-sm">
+                <div>緯度: {coords.lat.toFixed(6)}</div>
+                <div>経度: {coords.lon.toFixed(6)}</div>
+              </div>
+            ) : (
+              <div className="text-sm text-gray-500">取得中...</div>
+            )}
+          </div>
 
-      <div className="flex gap-2 items-center">
-        <button className="border px-3 py-2 rounded" onClick={grabGPS}>GPS取得</button>
-        <span className="text-sm">{coords ? `${coords.lat.toFixed(5)}, ${coords.lon.toFixed(5)}` : "未取得"}</span>
-      </div>
+          {/* QRコードスキャン */}
+          <div className="space-y-3">
+            <label className="block font-semibold">🏷️ 機材QRコード</label>
+            
+            {!scannerActive ? (
+              <button
+                onClick={startQrScan}
+                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition"
+              >
+                📷 QRコードをスキャン
+              </button>
+            ) : (
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  className="w-full border-2 border-gray-300 p-3 rounded-lg focus:border-blue-500 focus:outline-none"
+                  placeholder="QRコードを入力（例: MARINE-A-LIGHT-001）"
+                  value={equipmentQr}
+                  onChange={(e) => setEquipmentQr(e.target.value)}
+                />
+                <button
+                  onClick={() => setScannerActive(false)}
+                  className="text-sm text-gray-600 hover:underline"
+                >
+                  キャンセル
+                </button>
+              </div>
+            )}
+            
+            {equipmentQr && (
+              <div className="bg-green-50 p-3 rounded-lg">
+                <span className="text-green-700 text-sm">
+                  ✅ QR: {equipmentQr}
+                </span>
+              </div>
+            )}
+          </div>
 
-      <input type="file" accept="image/*" capture="user" onChange={e => e.target.files && uploadPhoto(e.target.files[0])} />
-      {photoUrl && <img src={photoUrl} alt="preview" className="w-32 h-32 object-cover rounded" />}
+          {/* メッセージ表示 */}
+          {message && (
+            <div className={`p-3 rounded-lg text-center ${
+              message.includes('✅') ? 'bg-green-100 text-green-700' :
+              message.includes('❌') ? 'bg-red-100 text-red-700' :
+              message.includes('⚠️') ? 'bg-yellow-100 text-yellow-700' :
+              'bg-blue-100 text-blue-700'
+            }`}>
+              {message}
+            </div>
+          )}
 
-      <div className="flex gap-2">
-        <button className="bg-black text-white px-4 py-2 rounded" onClick={()=>submit('checkin')}>出勤</button>
-        <button className="bg-black text-white px-4 py-2 rounded" onClick={()=>submit('checkout')}>退勤</button>
+          {/* 打刻ボタン */}
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              onClick={() => submit('checkin')}
+              disabled={loading || !equipmentQr}
+              className={`py-4 rounded-lg font-bold transition ${
+                loading || !equipmentQr
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-green-600 text-white hover:bg-green-700'
+              }`}
+            >
+              出勤
+            </button>
+            <button
+              onClick={() => submit('checkout')}
+              disabled={loading || !equipmentQr}
+              className={`py-4 rounded-lg font-bold transition ${
+                loading || !equipmentQr
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-orange-600 text-white hover:bg-orange-700'
+              }`}
+            >
+              退勤
+            </button>
+          </div>
+
+          {/* テスト用QRコード一覧 */}
+          <details className="mt-6">
+            <summary className="text-sm text-gray-600 cursor-pointer hover:text-gray-800">
+              📝 テスト用QRコード
+            </summary>
+            <div className="mt-2 text-xs space-y-1 bg-gray-50 p-3 rounded">
+              <div className="font-semibold text-gray-700">東京テスト会場:</div>
+              <div>HACHIOJI-LIGHT-001 (JR八王子駅テスト)</div>
+              <div className="mt-2 font-semibold text-gray-700">福岡会場:</div>
+              <div>MARINE-A-LIGHT-001 (マリンメッセ照明)</div>
+              <div>SUNPALACE-LIGHT-001 (サンパレス照明)</div>
+              <div>ZEPP-LIGHT-001 (Zepp照明)</div>
+              <div>KOKUSAI-LIGHT-001 (国際センター照明)</div>
+            </div>
+          </details>
+
+          {/* ログアウトボタン */}
+          <button
+            onClick={async () => {
+              await fetch('/api/auth/logout', { method: 'POST' })
+              router.push('/login')
+            }}
+            className="w-full text-center text-sm text-gray-600 hover:text-red-600 mt-4"
+          >
+            ログアウト
+          </button>
+        </div>
       </div>
     </main>
   )
