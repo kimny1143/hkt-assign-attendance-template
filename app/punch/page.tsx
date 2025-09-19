@@ -67,7 +67,7 @@ export default function PunchPage() {
 
           switch(err.code) {
             case err.PERMISSION_DENIED:
-              errorMessage = '位置情報の使用が拒否されました。\n\n【設定方法】\n• Safari: 設定 > Safari > 位置情報 > 許可\n• Chrome: サイト設定から位置情報を許可'
+              errorMessage = '位置情報の使用が拒否されました。\n\n【iOS設定方法】\n• 設定 → プライバシーとセキュリティ → 位置情報サービス → Chrome → 許可\n• Chromeでサイト再読み込み\n\n【Android設定方法】\n• Chrome設定 → サイト設定 → 位置情報 → 許可'
               break
             case err.POSITION_UNAVAILABLE:
               errorMessage = '位置情報が取得できません。\n\n【確認事項】\n• 位置情報サービスがONか確認\n• Wi-Fi/モバイルデータがONか確認'
