@@ -1,0 +1,58 @@
+[
+    {
+      "table_name": "roles",
+      "action": "❌ REMOVE - Replaced by skills"
+    },
+    {
+      "table_name": "audit_logs",
+      "action": "🔄 OPTIONAL - Keep if audit needed"
+    },
+    {
+      "table_name": "expenses",
+      "action": "🔄 OPTIONAL - Keep if expense tracking needed"
+    },
+    {
+      "table_name": "assignments",
+      "action": "✅ KEEP - Core functionality"
+    },
+    {
+      "table_name": "attendances",
+      "action": "✅ KEEP - Core functionality"
+    },
+    {
+      "table_name": "equipment",
+      "action": "✅ KEEP - QR code functionality"
+    },
+    {
+      "table_name": "events",
+      "action": "✅ KEEP - Core functionality"
+    },
+    {
+      "table_name": "shifts",
+      "action": "✅ KEEP - Core functionality (needs column update)"
+    },
+    {
+      "table_name": "skills",
+      "action": "✅ KEEP - New core table"
+    },
+    {
+      "table_name": "staff",
+      "action": "✅ KEEP - Core table (drop skill_tags column)"
+    },
+    {
+      "table_name": "staff_schedules",
+      "action": "✅ KEEP - New core table"
+    },
+    {
+      "table_name": "staff_skills",
+      "action": "✅ KEEP - New core table"
+    },
+    {
+      "table_name": "user_roles",
+      "action": "✅ KEEP - Permission management"
+    },
+    {
+      "table_name": "venues",
+      "action": "✅ KEEP - Core functionality"
+    }
+  ]

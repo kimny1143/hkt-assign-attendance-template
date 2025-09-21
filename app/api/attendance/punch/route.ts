@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 打刻記録を作成/更新
-  const { data, error } = await supabase.rpc('attendance_punch_v2', {
+  const { data, error } = await supabase.rpc('attendance_punch', {
     p_staff_uid: u.user.id,
     p_shift_id: shift.id,
     p_equipment_qr: equipment_qr,

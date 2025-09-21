@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { z } from 'zod'
+
+const shiftSchema = z.object({
+  event_id: z.string().uuid(),
+  skill_id: z.number(),
+  start_ts: z.string(), // ISO 8601 datetime
+  end_ts: z.string(),
+  required: z.number().min(1).default(1)
+})
 
 export async function GET(request: NextRequest) {
   try {
@@ -107,6 +116,80 @@ export async function GET(request: NextRequest) {
     console.error('API error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+// POST: 新規シフト作成
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const validatedData = shiftSchema.parse(body)
+
+    const supabase = await createClient()
+
+    // 認証・権限チェック
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // 管理者権限チェック
+    const { data: currentStaff } = await supabase
+      .from('staff')
+      .select('user_roles!user_roles_staff_id_fkey(role)')
+      .eq('user_id', user.id)
+      .single()
+
+    const role = currentStaff?.user_roles?.[0]?.role
+    if (!role || (role !== 'admin' && role !== 'manager')) {
+      return NextResponse.json({ error: 'Permission denied' }, { status: 403 })
+    }
+
+    // 時間の妥当性チェック
+    if (new Date(validatedData.end_ts) <= new Date(validatedData.start_ts)) {
+      return NextResponse.json(
+        { error: '終了時刻は開始時刻より後である必要があります' },
+        { status: 400 }
+      )
+    }
+
+    // シフトを作成
+    const { data: newShift, error } = await supabase
+      .from('shifts')
+      .insert(validatedData)
+      .select(`
+        *,
+        skills (
+          code,
+          label
+        ),
+        events (
+          event_date,
+          venues (
+            name
+          )
+        )
+      `)
+      .single()
+
+    if (error) throw error
+
+    return NextResponse.json({ shift: newShift }, { status: 201 })
+
+  } catch (error) {
+    console.error('Shift creation error:', error)
+
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid request data', details: error.errors },
+        { status: 400 }
+      )
+    }
+
+    return NextResponse.json(
+      { error: 'Failed to create shift' },
       { status: 500 }
     )
   }

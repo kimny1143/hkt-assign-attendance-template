@@ -75,7 +75,9 @@ export default function AdminPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-bold mb-4">👥 スタッフ管理</h2>
             <p className="text-gray-600 mb-4">スタッフの登録・編集・削除</p>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            <button
+              onClick={() => router.push('/admin/staff')}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
               管理画面へ
             </button>
           </div>
