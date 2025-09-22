@@ -35,10 +35,12 @@ export default function ShiftsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     event_id: '',
-    skill_id: '',
     start_time: '',
     end_time: '',
-    required: '1'
+    required_lighting: '2',
+    required_rigging: '2',
+    required_carry: '4',
+    required_driver: '1'
   });
 
   const supabase = createClient();
@@ -99,59 +101,67 @@ export default function ShiftsPage() {
     const selectedEvent = events.find(e => e.id === formData.event_id);
     if (!selectedEvent) return;
 
-    const shiftData = {
-      event_id: formData.event_id,
-      skill_id: formData.skill_id,
-      start_ts: `${selectedEvent.event_date}T${formData.start_time}:00`,
-      end_ts: `${selectedEvent.event_date}T${formData.end_time}:00`,
-      required: parseInt(formData.required)
-    };
+    // 各スキルのシフトデータを準備
+    const shiftsToCreate = skills.map(skill => {
+      let required = 1;
+      if (skill.code === 'LIGHTING') required = parseInt(formData.required_lighting);
+      else if (skill.code === 'RIGGING') required = parseInt(formData.required_rigging);
+      else if (skill.code === 'CARRY') required = parseInt(formData.required_carry);
+      else if (skill.code === 'DRIVER') required = parseInt(formData.required_driver);
+
+      return {
+        event_id: formData.event_id,
+        skill_id: skill.id,
+        start_ts: `${selectedEvent.event_date}T${formData.start_time}:00`,
+        end_ts: `${selectedEvent.event_date}T${formData.end_time}:00`,
+        required
+      };
+    });
 
     if (editingId) {
-      const { error } = await supabase
-        .from('shifts')
-        .update(shiftData)
-        .eq('id', editingId);
-
-      if (error) {
-        alert('更新エラー: ' + error.message);
-      } else {
-        setEditingId(null);
-        fetchData();
-      }
+      // 編集モードの場合は、同じイベントの全シフトを更新
+      alert('シフトの編集は個別に行ってください');
+      setEditingId(null);
     } else {
+      // 新規作成：4つのスキル全てのシフトを一括作成
       const { error } = await supabase
         .from('shifts')
-        .insert([shiftData]);
+        .insert(shiftsToCreate);
 
       if (error) {
         alert('追加エラー: ' + error.message);
       } else {
+        alert('全スキルのシフトを作成しました');
         fetchData();
       }
     }
 
     setFormData({
       event_id: '',
-      skill_id: '',
       start_time: '',
       end_time: '',
-      required: '1'
+      required_lighting: '2',
+      required_rigging: '2',
+      required_carry: '4',
+      required_driver: '1'
     });
   };
 
-  const handleEdit = (shift: any) => {
-    setEditingId(shift.id);
-    const startTime = new Date(shift.start_ts).toTimeString().slice(0, 5);
-    const endTime = new Date(shift.end_ts).toTimeString().slice(0, 5);
+  const handleEdit = async (shift: any) => {
+    // 個別編集用のシンプルな更新処理
+    const newRequired = prompt(`必要人数を入力してください (現在: ${shift.required}人):`, shift.required.toString());
+    if (newRequired && !isNaN(parseInt(newRequired))) {
+      const { error } = await supabase
+        .from('shifts')
+        .update({ required: parseInt(newRequired) })
+        .eq('id', shift.id);
 
-    setFormData({
-      event_id: shift.event_id,
-      skill_id: shift.skill_id,
-      start_time: startTime,
-      end_time: endTime,
-      required: shift.required.toString()
-    });
+      if (error) {
+        alert('更新エラー: ' + error.message);
+      } else {
+        fetchData();
+      }
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -212,21 +222,54 @@ export default function ShiftsPage() {
               ))}
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">スキル</label>
-            <select
-              value={formData.skill_id}
-              onChange={(e) => setFormData({ ...formData, skill_id: e.target.value })}
-              className="w-full px-3 py-2 border rounded-md"
-              required
-            >
-              <option value="">選択してください</option>
-              {skills.map(skill => (
-                <option key={skill.id} value={skill.id}>
-                  {skill.label} ({skill.code})
-                </option>
-              ))}
-            </select>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium mb-1">必要人数（全スキル分を設定）</label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div>
+                <label className="text-xs text-gray-600">🔦 照明</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.required_lighting}
+                  onChange={(e) => setFormData({ ...formData, required_lighting: e.target.value })}
+                  className="w-full px-2 py-1 border rounded-md text-sm"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-600">🔧 リガー</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.required_rigging}
+                  onChange={(e) => setFormData({ ...formData, required_rigging: e.target.value })}
+                  className="w-full px-2 py-1 border rounded-md text-sm"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-600">📦 搬入出</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.required_carry}
+                  onChange={(e) => setFormData({ ...formData, required_carry: e.target.value })}
+                  className="w-full px-2 py-1 border rounded-md text-sm"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-600">🚗 ドライバー</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.required_driver}
+                  onChange={(e) => setFormData({ ...formData, required_driver: e.target.value })}
+                  className="w-full px-2 py-1 border rounded-md text-sm"
+                  required
+                />
+              </div>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">開始時間</label>
@@ -248,24 +291,13 @@ export default function ShiftsPage() {
               required
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">必要人数</label>
-            <input
-              type="number"
-              min="1"
-              value={formData.required}
-              onChange={(e) => setFormData({ ...formData, required: e.target.value })}
-              className="w-full px-3 py-2 border rounded-md"
-              required
-            />
-          </div>
         </div>
         <div className="flex gap-2">
           <button
             type="submit"
             className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
           >
-            {editingId ? '更新' : '追加'}
+            {editingId ? '更新' : '全スキルのシフトを作成'}
           </button>
           {editingId && (
             <button
@@ -274,10 +306,12 @@ export default function ShiftsPage() {
                 setEditingId(null);
                 setFormData({
                   event_id: '',
-                  skill_id: '',
                   start_time: '',
                   end_time: '',
-                  required: '1'
+                  required_lighting: '2',
+                  required_rigging: '2',
+                  required_carry: '4',
+                  required_driver: '1'
                 });
               }}
               className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
