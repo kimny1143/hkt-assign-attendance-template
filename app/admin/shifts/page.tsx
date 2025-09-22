@@ -84,13 +84,13 @@ export default function ShiftsPage() {
     const selectedEvent = events.find(e => e.id === formData.event_id);
     if (!selectedEvent) return;
 
-    // イベント時間の範囲チェック
-    if (selectedEvent.open_time && formData.start_time < selectedEvent.open_time) {
-      alert(`シフト開始時間はイベント開場時間（${selectedEvent.open_time}）以降に設定してください`);
+    // イベント時間の範囲チェック（スタッフは前後の準備・片付けがあるため）
+    if (selectedEvent.open_time && formData.start_time > selectedEvent.open_time) {
+      alert(`シフト開始時間はイベント開場時間（${selectedEvent.open_time}）より前に設定してください（準備のため）`);
       return;
     }
-    if (selectedEvent.end_time && formData.end_time > selectedEvent.end_time) {
-      alert(`シフト終了時間はイベント終了時間（${selectedEvent.end_time}）以前に設定してください`);
+    if (selectedEvent.end_time && formData.end_time < selectedEvent.end_time) {
+      alert(`シフト終了時間はイベント終了時間（${selectedEvent.end_time}）より後に設定してください（片付けのため）`);
       return;
     }
 
@@ -197,14 +197,21 @@ export default function ShiftsPage() {
               onChange={(e) => {
                 const selectedEvent = events.find(ev => ev.id === e.target.value);
                 if (selectedEvent) {
-                  // イベントの時間に基づいてデフォルト値を設定
-                  const openTime = selectedEvent.open_time || '12:00';
+                  // イベントの時間に基づいてデフォルト値を設定（準備・片付け時間を考慮）
+                  const openTime = selectedEvent.open_time || '13:00';
                   const endTime = selectedEvent.end_time || '21:00';
+
+                  // 開場1時間前から開始、終了1時間後まで
+                  const defaultStartTime = openTime ?
+                    `${(parseInt(openTime.split(':')[0]) - 1).toString().padStart(2, '0')}:${openTime.split(':')[1]}` : '12:00';
+                  const defaultEndTime = endTime ?
+                    `${(parseInt(endTime.split(':')[0]) + 1).toString().padStart(2, '0')}:${endTime.split(':')[1]}` : '22:00';
+
                   setFormData({
                     ...formData,
                     event_id: e.target.value,
-                    start_time: openTime,
-                    end_time: endTime
+                    start_time: defaultStartTime,
+                    end_time: defaultEndTime
                   });
                 } else {
                   setFormData({ ...formData, event_id: e.target.value });
