@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { QrScanner } from '@yudiel/react-qr-scanner'
 
 interface TodayAssignment {
   id: string
@@ -134,13 +135,26 @@ export default function PunchPage() {
   // QRコードスキャン（カメラ使用）
   const startQrScan = async () => {
     try {
-      // 実際の実装では、QRスキャナーライブラリ（例：html5-qrcode）を使用
-      // ここではデモ用に手動入力
       setScannerActive(true)
       setMessage('📷 QRコードをスキャンしてください')
     } catch (error) {
       setMessage(`⚠️ カメラアクセスエラー`)
     }
+  }
+
+  // QRコード読み取り成功時の処理
+  const handleQrScanSuccess = (result: string) => {
+    if (result) {
+      setEquipmentQr(result)
+      setScannerActive(false)
+      setMessage('✅ QRコード読み取り完了')
+    }
+  }
+
+  // QRコード読み取りエラー時の処理
+  const handleQrScanError = (error: unknown) => {
+    console.error('QR Scanner Error:', error)
+    // エラーが続く場合は手動入力に切り替え
   }
 
   // 打刻処理
@@ -261,27 +275,47 @@ export default function PunchPage() {
             <label className="block font-semibold">🏷️ 機材QRコード</label>
             
             {!scannerActive ? (
-              <button
-                onClick={startQrScan}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition"
-              >
-                📷 QRコードをスキャン
-              </button>
-            ) : (
               <div className="space-y-2">
+                <button
+                  onClick={startQrScan}
+                  className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition"
+                >
+                  📷 カメラでQRコードをスキャン
+                </button>
+                <div className="text-center text-sm text-gray-500">または</div>
                 <input
                   type="text"
                   className="w-full border-2 border-gray-300 p-3 rounded-lg focus:border-blue-500 focus:outline-none"
-                  placeholder="QRコードを入力（例: MARINE-A-LIGHT-001）"
+                  placeholder="QRコードを手動入力（例: MARINE-A-LIGHT-001）"
                   value={equipmentQr}
                   onChange={(e) => setEquipmentQr(e.target.value)}
                 />
-                <button
-                  onClick={() => setScannerActive(false)}
-                  className="text-sm text-gray-600 hover:underline"
-                >
-                  キャンセル
-                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="relative rounded-lg overflow-hidden bg-black" style={{ aspectRatio: '1' }}>
+                  <QrScanner
+                    onDecode={handleQrScanSuccess}
+                    onError={handleQrScanError}
+                    containerStyle={{ width: '100%', height: '100%' }}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setScannerActive(false)}
+                    className="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition"
+                  >
+                    カメラを閉じる
+                  </button>
+                </div>
+                <div className="text-center text-sm text-gray-500">カメラに問題がある場合は</div>
+                <input
+                  type="text"
+                  className="w-full border-2 border-gray-300 p-3 rounded-lg focus:border-blue-500 focus:outline-none"
+                  placeholder="QRコードを手動入力"
+                  value={equipmentQr}
+                  onChange={(e) => setEquipmentQr(e.target.value)}
+                />
               </div>
             )}
             
