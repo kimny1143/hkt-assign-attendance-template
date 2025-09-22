@@ -143,11 +143,14 @@ export default function PunchPage() {
   }
 
   // QRコード読み取り成功時の処理
-  const handleQrScanSuccess = (result: string[]) => {
-    if (result && result.length > 0 && result[0]) {
-      setEquipmentQr(result[0])
-      setScannerActive(false)
-      setMessage('✅ QRコード読み取り完了')
+  const handleQrScanSuccess = (detectedCodes: any[]) => {
+    if (detectedCodes && detectedCodes.length > 0) {
+      const code = detectedCodes[0].rawValue || detectedCodes[0].data || detectedCodes[0].text || detectedCodes[0]
+      if (code) {
+        setEquipmentQr(code)
+        setScannerActive(false)
+        setMessage('✅ QRコード読み取り完了')
+      }
     }
   }
 
