@@ -62,11 +62,46 @@ export default function AdminPage() {
 
       <div className="max-w-7xl mx-auto p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* 会場管理 */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-bold mb-4">🏢 会場管理</h2>
+            <p className="text-gray-600 mb-4">会場の登録・編集・削除</p>
+            <button
+              onClick={() => router.push('/admin/venues')}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+              管理画面へ
+            </button>
+          </div>
+
+          {/* 機材QR管理 */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-bold mb-4">🏷️ 機材QR管理</h2>
+            <p className="text-gray-600 mb-4">機材QRコードの登録・管理</p>
+            <button
+              onClick={() => router.push('/admin/equipment')}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+              管理画面へ
+            </button>
+          </div>
+
           {/* イベント管理 */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-bold mb-4">📅 イベント管理</h2>
-            <p className="text-gray-600 mb-4">イベントとシフトの作成・編集</p>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            <p className="text-gray-600 mb-4">イベントの作成・編集</p>
+            <button
+              onClick={() => router.push('/admin/events')}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+              管理画面へ
+            </button>
+          </div>
+
+          {/* シフト管理 */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-bold mb-4">🕐 シフト管理</h2>
+            <p className="text-gray-600 mb-4">シフトの作成・必要人数設定</p>
+            <button
+              onClick={() => router.push('/admin/shifts')}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
               管理画面へ
             </button>
           </div>
@@ -82,53 +117,38 @@ export default function AdminPage() {
             </button>
           </div>
 
-          {/* 勤怠レポート */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold mb-4">📊 勤怠レポート</h2>
-            <p className="text-gray-600 mb-4">出退勤記録の確認・CSV出力</p>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-              レポート表示
-            </button>
-          </div>
-
-          {/* 機材QR管理 */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold mb-4">🏷️ 機材QR管理</h2>
-            <p className="text-gray-600 mb-4">機材QRコードの登録・印刷</p>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-              QR管理画面へ
-            </button>
-          </div>
-
           {/* アサイン管理 */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-bold mb-4">📋 アサイン管理</h2>
             <p className="text-gray-600 mb-4">スタッフのシフト割り当て</p>
-            <button 
+            <button
               onClick={() => router.push('/admin/assign')}
               className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
               アサイン画面へ
             </button>
           </div>
+        </div>
 
-          {/* 設定 */}
-          {user?.role === 'admin' && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-bold mb-4">⚙️ システム設定</h2>
-              <p className="text-gray-600 mb-4">会場・LINE連携の設定</p>
-              <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                設定画面へ
-              </button>
-            </div>
-          )}
+        {/* ステータス */}
+        <div className="mt-8 bg-green-50 rounded-lg p-6">
+          <h3 className="text-lg font-bold mb-2">✅ 実装済み機能</h3>
+          <ul className="text-sm text-gray-700 space-y-1">
+            <li>• 会場管理（住所、GPS座標、収容人数）</li>
+            <li>• 機材QR管理（QRコード自動生成）</li>
+            <li>• イベント管理（日程、時間設定）</li>
+            <li>• シフト管理（スキル別必要人数）</li>
+            <li>• スタッフ管理（基本情報、スキル設定）</li>
+            <li>• アサイン管理（シフト割り当て）</li>
+          </ul>
         </div>
 
         {/* 今後の実装予定 */}
-        <div className="mt-8 bg-yellow-50 rounded-lg p-6">
+        <div className="mt-4 bg-yellow-50 rounded-lg p-6">
           <h3 className="text-lg font-bold mb-2">🚧 実装予定の機能</h3>
           <ul className="text-sm text-gray-700 space-y-1">
-            <li>• 各管理画面の詳細実装</li>
-            <li>• LINE連携による通知機能</li>
+            <li>• 勤怠レポート（CSV出力）</li>
+            <li>• Slack通知機能（MVP）</li>
+            <li>• LINE連携（次フェーズ）</li>
             <li>• freee給与計算連携</li>
             <li>• リアルタイムダッシュボード</li>
           </ul>
