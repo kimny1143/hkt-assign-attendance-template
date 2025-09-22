@@ -37,10 +37,10 @@ export default function ShiftsPage() {
     event_id: '',
     start_time: '',
     end_time: '',
+    required_pa: '2',
+    required_sound_operator: '2',
     required_lighting: '2',
-    required_rigging: '2',
-    required_carry: '4',
-    required_driver: '1'
+    required_backstage: '2'
   });
 
   const supabase = createClient();
@@ -103,11 +103,11 @@ export default function ShiftsPage() {
 
     // 各スキルのシフトデータを準備
     const shiftsToCreate = skills.map(skill => {
-      let required = 1;
-      if (skill.code === 'LIGHTING') required = parseInt(formData.required_lighting);
-      else if (skill.code === 'RIGGING') required = parseInt(formData.required_rigging);
-      else if (skill.code === 'CARRY') required = parseInt(formData.required_carry);
-      else if (skill.code === 'DRIVER') required = parseInt(formData.required_driver);
+      let required = 2;
+      if (skill.code === 'pa') required = parseInt(formData.required_pa);
+      else if (skill.code === 'sound_operator') required = parseInt(formData.required_sound_operator);
+      else if (skill.code === 'lighting') required = parseInt(formData.required_lighting);
+      else if (skill.code === 'backstage') required = parseInt(formData.required_backstage);
 
       return {
         event_id: formData.event_id,
@@ -140,10 +140,10 @@ export default function ShiftsPage() {
       event_id: '',
       start_time: '',
       end_time: '',
+      required_pa: '2',
+      required_sound_operator: '2',
       required_lighting: '2',
-      required_rigging: '2',
-      required_carry: '4',
-      required_driver: '1'
+      required_backstage: '2'
     });
   };
 
@@ -226,7 +226,29 @@ export default function ShiftsPage() {
             <label className="block text-sm font-medium mb-1">必要人数（全スキル分を設定）</label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <div>
-                <label className="text-xs text-gray-600">🔦 照明</label>
+                <label className="text-xs text-gray-600">🎙️ PA</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.required_pa}
+                  onChange={(e) => setFormData({ ...formData, required_pa: e.target.value })}
+                  className="w-full px-2 py-1 border rounded-md text-sm"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-600">🎵 音源再生</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.required_sound_operator}
+                  onChange={(e) => setFormData({ ...formData, required_sound_operator: e.target.value })}
+                  className="w-full px-2 py-1 border rounded-md text-sm"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-600">💡 照明</label>
                 <input
                   type="number"
                   min="0"
@@ -237,34 +259,12 @@ export default function ShiftsPage() {
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-600">🔧 リガー</label>
+                <label className="text-xs text-gray-600">🎭 バックヤード</label>
                 <input
                   type="number"
                   min="0"
-                  value={formData.required_rigging}
-                  onChange={(e) => setFormData({ ...formData, required_rigging: e.target.value })}
-                  className="w-full px-2 py-1 border rounded-md text-sm"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-xs text-gray-600">📦 搬入出</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.required_carry}
-                  onChange={(e) => setFormData({ ...formData, required_carry: e.target.value })}
-                  className="w-full px-2 py-1 border rounded-md text-sm"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-xs text-gray-600">🚗 ドライバー</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.required_driver}
-                  onChange={(e) => setFormData({ ...formData, required_driver: e.target.value })}
+                  value={formData.required_backstage}
+                  onChange={(e) => setFormData({ ...formData, required_backstage: e.target.value })}
                   className="w-full px-2 py-1 border rounded-md text-sm"
                   required
                 />
@@ -308,10 +308,10 @@ export default function ShiftsPage() {
                   event_id: '',
                   start_time: '',
                   end_time: '',
+                  required_pa: '2',
+                  required_sound_operator: '2',
                   required_lighting: '2',
-                  required_rigging: '2',
-                  required_carry: '4',
-                  required_driver: '1'
+                  required_backstage: '2'
                 });
               }}
               className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
