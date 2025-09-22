@@ -151,13 +151,12 @@ export default function ShiftsPage() {
     }
   };
 
-  const formatDateTime = (dateStr: string) => {
+  const formatTime = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleString('ja-JP', {
-      month: '2-digit',
-      day: '2-digit',
+    return date.toLocaleTimeString('ja-JP', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      hour12: false
     });
   };
 
@@ -291,8 +290,8 @@ export default function ShiftsPage() {
                 <td className="px-4 py-3 text-sm">
                   {shift.name || '-'}
                 </td>
-                <td className="px-4 py-3 text-sm">{formatDateTime(shift.start_ts)}</td>
-                <td className="px-4 py-3 text-sm">{formatDateTime(shift.end_ts)}</td>
+                <td className="px-4 py-3 text-sm">{formatTime(shift.start_ts)}</td>
+                <td className="px-4 py-3 text-sm">{formatTime(shift.end_ts)}</td>
                 <td className="px-4 py-3 text-center">{shift.required}人</td>
                 <td className="px-4 py-3">
                   <button
@@ -335,11 +334,11 @@ export default function ShiftsPage() {
                   <div className="flex items-center gap-1">
                     <Clock className="w-3 h-3 text-gray-400" />
                     <p className="text-xs text-gray-500">
-                      <span className="font-medium">開始:</span> {formatDateTime(shift.start_ts)}
+                      <span className="font-medium">開始:</span> {formatTime(shift.start_ts)}
                     </p>
                   </div>
                   <p className="text-xs text-gray-500 ml-4">
-                    <span className="font-medium">終了:</span> {formatDateTime(shift.end_ts)}
+                    <span className="font-medium">終了:</span> {formatTime(shift.end_ts)}
                   </p>
                   <div className="flex items-center gap-1">
                     <Users className="w-3 h-3 text-gray-400" />
