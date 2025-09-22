@@ -7,7 +7,7 @@ import { Clock, Calendar, Users, Edit, Trash2 } from 'lucide-react';
 type Shift = {
   id: string;
   event_id: string;
-  skill_id: string;
+  name: string;
   start_ts: string;
   end_ts: string;
   required: number;
@@ -21,26 +21,17 @@ type Event = {
   notes: string | null;
 };
 
-type Skill = {
-  id: string;
-  code: string;
-  label: string;
-};
-
 export default function ShiftsPage() {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
-  const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     event_id: '',
+    name: '',
     start_time: '',
     end_time: '',
-    required_pa: '2',
-    required_sound_operator: '2',
-    required_lighting: '2',
-    required_backstage: '2'
+    required: '2'
   });
 
   const supabase = createClient();
@@ -50,7 +41,7 @@ export default function ShiftsPage() {
   }, []);
 
   const fetchData = async () => {
-    const [shiftsRes, eventsRes, skillsRes] = await Promise.all([
+    const [shiftsRes, eventsRes] = await Promise.all([
       supabase
         .from('shifts')
         .select(`
@@ -59,19 +50,14 @@ export default function ShiftsPage() {
             event_date,
             notes,
             venues(name)
-          ),
-          skills(code, label)
+          )
         `)
         .order('start_ts', { ascending: false }),
       supabase
         .from('events')
         .select('*, venues(name)')
         .gte('event_date', new Date().toISOString().split('T')[0])
-        .order('event_date'),
-      supabase
-        .from('skills')
-        .select('*')
-        .order('code')
+        .order('event_date')
     ]);
 
     if (shiftsRes.error) {
@@ -86,12 +72,6 @@ export default function ShiftsPage() {
       setEvents(eventsRes.data || []);
     }
 
-    if (skillsRes.error) {
-      console.error('Error fetching skills:', skillsRes.error);
-    } else {
-      setSkills(skillsRes.data || []);
-    }
-
     setLoading(false);
   };
 
@@ -101,67 +81,59 @@ export default function ShiftsPage() {
     const selectedEvent = events.find(e => e.id === formData.event_id);
     if (!selectedEvent) return;
 
-    // 各スキルのシフトデータを準備
-    const shiftsToCreate = skills.map(skill => {
-      let required = 2;
-      if (skill.code === 'pa') required = parseInt(formData.required_pa);
-      else if (skill.code === 'sound_operator') required = parseInt(formData.required_sound_operator);
-      else if (skill.code === 'lighting') required = parseInt(formData.required_lighting);
-      else if (skill.code === 'backstage') required = parseInt(formData.required_backstage);
-
-      return {
-        event_id: formData.event_id,
-        skill_id: skill.id,
-        start_ts: `${selectedEvent.event_date}T${formData.start_time}:00`,
-        end_ts: `${selectedEvent.event_date}T${formData.end_time}:00`,
-        required
-      };
-    });
+    const shiftData = {
+      event_id: formData.event_id,
+      name: formData.name || `${selectedEvent.event_date} シフト`,
+      start_ts: `${selectedEvent.event_date}T${formData.start_time}:00`,
+      end_ts: `${selectedEvent.event_date}T${formData.end_time}:00`,
+      required: parseInt(formData.required)
+    };
 
     if (editingId) {
-      // 編集モードの場合は、同じイベントの全シフトを更新
-      alert('シフトの編集は個別に行ってください');
-      setEditingId(null);
-    } else {
-      // 新規作成：4つのスキル全てのシフトを一括作成
       const { error } = await supabase
         .from('shifts')
-        .insert(shiftsToCreate);
+        .update(shiftData)
+        .eq('id', editingId);
+
+      if (error) {
+        alert('更新エラー: ' + error.message);
+      } else {
+        setEditingId(null);
+        fetchData();
+      }
+    } else {
+      const { error } = await supabase
+        .from('shifts')
+        .insert([shiftData]);
 
       if (error) {
         alert('追加エラー: ' + error.message);
       } else {
-        alert('全スキルのシフトを作成しました');
         fetchData();
       }
     }
 
     setFormData({
       event_id: '',
+      name: '',
       start_time: '',
       end_time: '',
-      required_pa: '2',
-      required_sound_operator: '2',
-      required_lighting: '2',
-      required_backstage: '2'
+      required: '2'
     });
   };
 
-  const handleEdit = async (shift: any) => {
-    // 個別編集用のシンプルな更新処理
-    const newRequired = prompt(`必要人数を入力してください (現在: ${shift.required}人):`, shift.required.toString());
-    if (newRequired && !isNaN(parseInt(newRequired))) {
-      const { error } = await supabase
-        .from('shifts')
-        .update({ required: parseInt(newRequired) })
-        .eq('id', shift.id);
+  const handleEdit = (shift: any) => {
+    setEditingId(shift.id);
+    const startTime = new Date(shift.start_ts).toTimeString().slice(0, 5);
+    const endTime = new Date(shift.end_ts).toTimeString().slice(0, 5);
 
-      if (error) {
-        alert('更新エラー: ' + error.message);
-      } else {
-        fetchData();
-      }
-    }
+    setFormData({
+      event_id: shift.event_id,
+      name: shift.name || '',
+      start_time: startTime,
+      end_time: endTime,
+      required: shift.required.toString()
+    });
   };
 
   const handleDelete = async (id: string) => {
@@ -222,54 +194,15 @@ export default function ShiftsPage() {
               ))}
             </select>
           </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium mb-1">必要人数（全スキル分を設定）</label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              <div>
-                <label className="text-xs text-gray-600">🎙️ PA</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.required_pa}
-                  onChange={(e) => setFormData({ ...formData, required_pa: e.target.value })}
-                  className="w-full px-2 py-1 border rounded-md text-sm"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-xs text-gray-600">🎵 音源再生</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.required_sound_operator}
-                  onChange={(e) => setFormData({ ...formData, required_sound_operator: e.target.value })}
-                  className="w-full px-2 py-1 border rounded-md text-sm"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-xs text-gray-600">💡 照明</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.required_lighting}
-                  onChange={(e) => setFormData({ ...formData, required_lighting: e.target.value })}
-                  className="w-full px-2 py-1 border rounded-md text-sm"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-xs text-gray-600">🎭 バックヤード</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.required_backstage}
-                  onChange={(e) => setFormData({ ...formData, required_backstage: e.target.value })}
-                  className="w-full px-2 py-1 border rounded-md text-sm"
-                  required
-                />
-              </div>
-            </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">シフト名（任意）</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full px-3 py-2 border rounded-md"
+              placeholder="例: 昼シフト、夜シフト"
+            />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">開始時間</label>
@@ -291,13 +224,28 @@ export default function ShiftsPage() {
               required
             />
           </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium mb-1">必要人数</label>
+            <input
+              type="number"
+              min="1"
+              max="4"
+              value={formData.required}
+              onChange={(e) => setFormData({ ...formData, required: e.target.value })}
+              className="w-full px-3 py-2 border rounded-md"
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              ※ アサインされたスタッフのスキルで全4スキル（PA、音源再生、照明、バックヤード）をカバーする必要があります
+            </p>
+          </div>
         </div>
         <div className="flex gap-2">
           <button
             type="submit"
             className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
           >
-            {editingId ? '更新' : '全スキルのシフトを作成'}
+            {editingId ? '更新' : 'シフト作成'}
           </button>
           {editingId && (
             <button
@@ -306,12 +254,10 @@ export default function ShiftsPage() {
                 setEditingId(null);
                 setFormData({
                   event_id: '',
+                  name: '',
                   start_time: '',
                   end_time: '',
-                  required_pa: '2',
-                  required_sound_operator: '2',
-                  required_lighting: '2',
-                  required_backstage: '2'
+                  required: '2'
                 });
               }}
               className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
@@ -328,7 +274,7 @@ export default function ShiftsPage() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">イベント</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">スキル</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">シフト名</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">開始</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">終了</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">必要人数</th>
@@ -342,10 +288,8 @@ export default function ShiftsPage() {
                   {shift.events?.event_date} {shift.events?.venues?.name}
                   {shift.events?.notes && <span className="text-gray-500"> ({shift.events.notes})</span>}
                 </td>
-                <td className="px-4 py-3">
-                  <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                    {shift.skills?.label || '-'}
-                  </span>
+                <td className="px-4 py-3 text-sm">
+                  {shift.name || '-'}
                 </td>
                 <td className="px-4 py-3 text-sm">{formatDateTime(shift.start_ts)}</td>
                 <td className="px-4 py-3 text-sm">{formatDateTime(shift.end_ts)}</td>
@@ -384,11 +328,9 @@ export default function ShiftsPage() {
                   {shift.events?.venues?.name}
                   {shift.events?.notes && <span className="text-gray-500"> ({shift.events.notes})</span>}
                 </p>
-                <div className="mb-2">
-                  <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                    {shift.skills?.label || '-'}
-                  </span>
-                </div>
+                <p className="text-sm text-gray-600 mb-2">
+                  {shift.name || 'シフト'}
+                </p>
                 <div className="space-y-1">
                   <div className="flex items-center gap-1">
                     <Clock className="w-3 h-3 text-gray-400" />
