@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { Clock, Calendar, Users, Edit, Trash2 } from 'lucide-react';
 
 type Shift = {
   id: string;
@@ -287,7 +288,8 @@ export default function ShiftsPage() {
         </div>
       </form>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Desktop Table View */}
+      <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
@@ -332,6 +334,65 @@ export default function ShiftsPage() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-4">
+        {shifts.map((shift: any) => (
+          <div key={shift.id} className="bg-white rounded-lg shadow p-4">
+            <div className="flex justify-between items-start mb-3">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="w-4 h-4 text-blue-600" />
+                  <h3 className="font-semibold">{shift.events?.event_date}</h3>
+                </div>
+                <p className="text-sm text-gray-600 mb-2">
+                  {shift.events?.venues?.name}
+                  {shift.events?.notes && <span className="text-gray-500"> ({shift.events.notes})</span>}
+                </p>
+                <div className="mb-2">
+                  <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                    {shift.skills?.label || '-'}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-gray-400" />
+                    <p className="text-xs text-gray-500">
+                      <span className="font-medium">開始:</span> {formatDateTime(shift.start_ts)}
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-500 ml-4">
+                    <span className="font-medium">終了:</span> {formatDateTime(shift.end_ts)}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Users className="w-3 h-3 text-gray-400" />
+                    <p className="text-xs text-gray-500">
+                      <span className="font-medium">必要人数:</span> {shift.required}人
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleEdit(shift)}
+                className="flex-1 flex items-center justify-center px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+              >
+                <Edit className="w-4 h-4 mr-1" />
+                編集
+              </button>
+              <button
+                onClick={() => handleDelete(shift.id)}
+                className="flex-1 flex items-center justify-center px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                削除
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
