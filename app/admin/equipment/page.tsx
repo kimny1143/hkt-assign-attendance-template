@@ -278,7 +278,8 @@ export default function EquipmentPage() {
         </div>
       </form>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Desktop Table View */}
+      <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
@@ -347,6 +348,75 @@ export default function EquipmentPage() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-4">
+        {equipment.map((item: any) => (
+          <div key={item.id} className="bg-white rounded-lg shadow p-4">
+            <div className="flex justify-between items-start mb-3">
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg">{item.name}</h3>
+                <p className="text-sm text-gray-600 mt-1">📍 {item.venues?.name || '会場未設定'}</p>
+                <div className="mt-2 space-y-1">
+                  <p className="text-xs text-gray-500">
+                    <span className="font-medium">タイプ:</span> {item.equipment_type}
+                  </p>
+                  {item.location_hint && (
+                    <p className="text-xs text-gray-500">
+                      <span className="font-medium">設置場所:</span> {item.location_hint}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <span className={`px-2 py-1 text-xs rounded-full ${
+                item.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              }`}>
+                {item.active ? '有効' : '無効'}
+              </span>
+            </div>
+
+            <div className="p-2 bg-gray-50 rounded text-center mb-3">
+              <code className="text-xs font-mono">{item.qr_code}</code>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setSelectedQR({ code: item.qr_code, name: item.name });
+                  setShowQRModal(true);
+                }}
+                className="flex-1 flex items-center justify-center px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h2m-6 0h2" />
+                  <rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2" fill="none" />
+                  <rect x="14" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2" fill="none" />
+                  <rect x="3" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2" fill="none" />
+                </svg>
+                QR表示
+              </button>
+              <button
+                onClick={() => handleEdit(item)}
+                className="flex-1 flex items-center justify-center px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                編集
+              </button>
+              <button
+                onClick={() => handleDelete(item.id)}
+                className="flex-1 flex items-center justify-center px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                削除
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* QRコードモーダル */}

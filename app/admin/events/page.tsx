@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { Calendar, Clock, MapPin, Edit, Trash2 } from 'lucide-react';
 
 type Event = {
   id: string;
@@ -259,7 +260,8 @@ export default function EventsPage() {
         </div>
       </form>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Desktop Table View */}
+      <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
@@ -297,6 +299,59 @@ export default function EventsPage() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-4">
+        {events.map((event: any) => (
+          <div key={event.id} className="bg-white rounded-lg shadow p-4">
+            <div className="flex justify-between items-start mb-3">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="w-4 h-4 text-blue-600" />
+                  <h3 className="font-semibold text-lg">{formatDate(event.event_date)}</h3>
+                </div>
+                <div className="flex items-center gap-1 mb-2">
+                  <MapPin className="w-4 h-4 text-gray-400" />
+                  <p className="text-sm text-gray-600">{event.venues?.name || '会場未設定'}</p>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-gray-400" />
+                    <p className="text-xs text-gray-500">
+                      <span className="font-medium">開場:</span> {event.open_time}
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-500 ml-4">
+                    <span className="font-medium">開演:</span> {event.start_time} | <span className="font-medium">終演:</span> {event.end_time}
+                  </p>
+                  {event.notes && (
+                    <p className="text-xs text-gray-500 ml-4">
+                      <span className="font-medium">備考:</span> {event.notes}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleEdit(event)}
+                className="flex-1 flex items-center justify-center px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+              >
+                <Edit className="w-4 h-4 mr-1" />
+                編集
+              </button>
+              <button
+                onClick={() => handleDelete(event.id)}
+                className="flex-1 flex items-center justify-center px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                削除
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
