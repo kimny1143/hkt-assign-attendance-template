@@ -4,24 +4,26 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-interface Skill {
-  skill_id: number
-  skill_code: string
-  skill_label: string
-  proficiency_level: number
-  certified: boolean
-}
-
 interface Staff {
   id: string
   name: string
   email: string | null
   phone: string | null
   active: boolean
-  skills: Skill[]
-  role: string
+  code: string | null
   hourly_rate: number | null
   daily_rate: number | null
+  user_roles?: { role: string }[]
+  staff_skills?: {
+    skill_id: number
+    proficiency_level: number
+    certified: boolean
+    skills: {
+      id: number
+      code: string
+      label: string
+    }
+  }[]
 }
 
 export default function StaffListPage() {
@@ -36,16 +38,10 @@ export default function StaffListPage() {
 
   const fetchStaff = async () => {
     try {
-      const response = await fetch('/api/admin/staff')
-      if (!response.ok) {
-        if (response.status === 401) {
-          router.push('/login')
-          return
-        }
-        throw new Error('Failed to fetch staff')
-      }
-      const data = await response.json()
-      setStaffList(data.staff || [])
+      const { StaffRepository } = await import('@/lib/repositories/staffRepository')
+      const staffRepo = new StaffRepository()
+      const data = await staffRepo.getAll()
+      setStaffList(data || [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
@@ -57,17 +53,12 @@ export default function StaffListPage() {
     if (!confirm('本当にこのスタッフを無効化しますか？')) return
 
     try {
-      const response = await fetch(`/api/admin/staff/${staffId}`, {
-        method: 'DELETE'
-      })
-
-      if (response.ok) {
-        await fetchStaff()
-      } else {
-        alert('スタッフの無効化に失敗しました')
-      }
+      const { StaffRepository } = await import('@/lib/repositories/staffRepository')
+      const staffRepo = new StaffRepository()
+      await staffRepo.deactivate(staffId)
+      await fetchStaff()
     } catch (err) {
-      alert('エラーが発生しました')
+      alert('スタッフの無効化に失敗しました: ' + (err instanceof Error ? err.message : 'エラーが発生しました'))
     }
   }
 
@@ -156,28 +147,34 @@ export default function StaffListPage() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-wrap gap-1">
-                      {staff.skills.map((skill) => (
+                      {staff.staff_skills?.map((staffSkill) => (
                         <span
-                          key={skill.skill_id}
+                          key={staffSkill.skill_id}
                           className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
                         >
-                          {skill.skill_label}
-                          {skill.certified && ' ⭐'}
+                          {staffSkill.skills.label}
+                          {staffSkill.certified && ' ⭐'}
                           <span className="ml-1 text-xs opacity-75">
-                            Lv{skill.proficiency_level}
+                            Lv{staffSkill.proficiency_level}
                           </span>
                         </span>
                       ))}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      staff.role === 'admin' ? 'bg-red-100 text-red-800' :
-                      staff.role === 'manager' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {staff.role}
-                    </span>
+                    {staff.user_roles && staff.user_roles.length > 0 ? (
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        staff.user_roles[0].role === 'admin' ? 'bg-red-100 text-red-800' :
+                        staff.user_roles[0].role === 'manager' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {staff.user_roles[0].role}
+                      </span>
+                    ) : (
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                        staff
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">

@@ -25,6 +25,7 @@ interface Staff {
   name: string
   skill_tags: string[]
   is_available: boolean
+  has_all_skills: boolean
 }
 
 export default function AssignPage() {
@@ -200,27 +201,47 @@ export default function AssignPage() {
                         )
                       }
                       
+                      // 1名枠の場合は全スキル保有者のみ、複数枠の場合は全員表示
+                      const filteredStaff = shift.required === 1
+                        ? availableStaff.filter(staff => staff.has_all_skills)
+                        : availableStaff
+
                       return (
                         <div className="border-t pt-4">
                           <div className="text-sm text-gray-500 mb-2">
                             あと{shift.required - confirmedCount}名必要
+                            {shift.required === 1 && (
+                              <span className="ml-2 text-xs text-orange-600">
+                                (全スキル保有者のみ)
+                              </span>
+                            )}
                           </div>
-                          <select 
-                            onChange={(e) => {
-                              if (e.target.value) {
-                                assignStaff(shift.id, e.target.value)
-                                e.target.value = ''
-                              }
-                            }}
-                            className="w-full p-2 border rounded"
-                          >
-                            <option value="">スタッフを選択...</option>
-                            {availableStaff.map(staff => (
-                              <option key={staff.id} value={staff.id}>
-                                {staff.name} {staff.skill_tags.join(', ')}
-                              </option>
-                            ))}
-                          </select>
+                          {filteredStaff.length === 0 ? (
+                            <div className="text-sm text-gray-400 p-2 bg-gray-50 rounded">
+                              {shift.required === 1
+                                ? '全スキル保有者がいません'
+                                : '利用可能なスタッフがいません'}
+                            </div>
+                          ) : (
+                            <select
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  assignStaff(shift.id, e.target.value)
+                                  e.target.value = ''
+                                }
+                              }}
+                              className="w-full p-2 border rounded"
+                            >
+                              <option value="">スタッフを選択...</option>
+                              {filteredStaff.map(staff => (
+                                <option key={staff.id} value={staff.id}>
+                                  {staff.name}
+                                  {staff.has_all_skills && ' ⭐'}
+                                  {staff.skill_tags.length > 0 && ` (${staff.skill_tags.join(', ')})`}
+                                </option>
+                              ))}
+                            </select>
+                          )}
                         </div>
                       )
                     })()}
@@ -239,7 +260,12 @@ export default function AssignPage() {
                   <div className="space-y-2">
                     {availableStaff.map(staff => (
                       <div key={staff.id} className="p-2 border rounded hover:bg-gray-50">
-                        <div className="font-semibold">{staff.name}</div>
+                        <div className="font-semibold">
+                          {staff.name}
+                          {staff.has_all_skills && (
+                            <span className="ml-1 text-yellow-500" title="全スキル保有">⭐</span>
+                          )}
+                        </div>
                         <div className="text-xs text-gray-600">
                           {staff.skill_tags.join(', ')}
                         </div>

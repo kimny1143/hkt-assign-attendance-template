@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { MapPin, Navigation, Search } from 'lucide-react';
 
 type Venue = {
   id: string;
@@ -24,6 +25,8 @@ export default function VenuesPage() {
     lon: '',
     capacity: ''
   });
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
 
   const supabase = createClient();
 
@@ -109,6 +112,96 @@ export default function VenuesPage() {
     }
   };
 
+  // 現在位置を取得
+  const getCurrentPosition = () => {
+    setGpsLoading(true);
+    if (!navigator.geolocation) {
+      alert('お使いのブラウザは位置情報取得に対応していません');
+      setGpsLoading(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormData({
+          ...formData,
+          lat: position.coords.latitude.toFixed(6),
+          lon: position.coords.longitude.toFixed(6)
+        });
+        setGpsLoading(false);
+      },
+      (error) => {
+        alert('位置情報の取得に失敗しました: ' + error.message);
+        setGpsLoading(false);
+      }
+    );
+  };
+
+  // 住所から座標を取得（複数のAPIを試行）
+  const geocodeAddress = async () => {
+    if (!formData.address) {
+      alert('住所を入力してください');
+      return;
+    }
+
+    setGeocoding(true);
+    try {
+      // まず日本語の住所をそのまま検索
+      let response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(formData.address + ' Japan')}&accept-language=ja&limit=1`
+      );
+      let data = await response.json();
+
+      // データが見つからない場合は、住所を簡略化して再検索
+      if (!data || data.length === 0) {
+        // 番地を除去して再検索（例：「渋谷区道玄坂2-1」→「渋谷区道玄坂」）
+        const simplifiedAddress = formData.address.replace(/[\d\-－丁目番地号]/g, '').trim();
+        console.log('簡略化した住所で再検索:', simplifiedAddress);
+
+        response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(simplifiedAddress + ' Japan')}&accept-language=ja&limit=1`
+        );
+        data = await response.json();
+      }
+
+      if (data && data.length > 0) {
+        console.log('取得した座標データ:', data[0]);
+        setFormData({
+          ...formData,
+          lat: parseFloat(data[0].lat).toFixed(6),
+          lon: parseFloat(data[0].lon).toFixed(6)
+        });
+        // 取得した住所を表示（確認用）
+        if (data[0].display_name) {
+          console.log('マッチした住所:', data[0].display_name);
+        }
+      } else {
+        // 代替案：国土地理院APIを使用
+        console.log('国土地理院APIを試行中...');
+        const gsiResponse = await fetch(
+          `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(formData.address)}`
+        );
+        const gsiData = await gsiResponse.json();
+
+        if (gsiData && gsiData.length > 0) {
+          const [lon, lat] = gsiData[0].geometry.coordinates;
+          setFormData({
+            ...formData,
+            lat: lat.toFixed(6),
+            lon: lon.toFixed(6)
+          });
+        } else {
+          alert('住所から座標を取得できませんでした。\n住所を確認するか、手動で緯度経度を入力してください。');
+        }
+      }
+    } catch (error) {
+      console.error('ジオコーディングエラー:', error);
+      alert('ジオコーディングエラー: ' + error);
+    } finally {
+      setGeocoding(false);
+    }
+  };
+
   if (loading) return <div className="p-4">読み込み中...</div>;
 
   return (
@@ -127,15 +220,26 @@ export default function VenuesPage() {
               required
             />
           </div>
-          <div>
+          <div className="md:col-span-2">
             <label className="block text-sm font-medium mb-1">住所</label>
-            <input
-              type="text"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              className="w-full px-3 py-2 border rounded-md"
-              required
-            />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                className="flex-1 px-3 py-2 border rounded-md"
+                placeholder="例: 東京都渋谷区道玄坂2-1"
+              />
+              <button
+                type="button"
+                onClick={geocodeAddress}
+                disabled={geocoding}
+                className="px-3 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:opacity-50 flex items-center gap-1"
+              >
+                <Search className="w-4 h-4" />
+                {geocoding ? '検索中...' : '座標取得'}
+              </button>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">緯度</label>
@@ -146,6 +250,7 @@ export default function VenuesPage() {
               onChange={(e) => setFormData({ ...formData, lat: e.target.value })}
               className="w-full px-3 py-2 border rounded-md"
               required
+              placeholder="35.658581"
             />
           </div>
           <div>
@@ -157,7 +262,22 @@ export default function VenuesPage() {
               onChange={(e) => setFormData({ ...formData, lon: e.target.value })}
               className="w-full px-3 py-2 border rounded-md"
               required
+              placeholder="139.698742"
             />
+          </div>
+          <div className="md:col-span-2">
+            <button
+              type="button"
+              onClick={getCurrentPosition}
+              disabled={gpsLoading}
+              className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 disabled:opacity-50 flex items-center gap-2"
+            >
+              <Navigation className="w-4 h-4" />
+              {gpsLoading ? '取得中...' : '現在位置を取得'}
+            </button>
+            <p className="text-xs text-gray-500 mt-1">
+              ブラウザの位置情報を使用して現在地の座標を取得します
+            </p>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">収容人数</label>
@@ -207,7 +327,12 @@ export default function VenuesPage() {
               <tr key={venue.id}>
                 <td className="px-4 py-3">{venue.name}</td>
                 <td className="px-4 py-3 text-sm">{venue.address}</td>
-                <td className="px-4 py-3 text-sm">{venue.lat}, {venue.lon}</td>
+                <td className="px-4 py-3 text-sm">
+                  <div className="flex items-center gap-1">
+                    <MapPin className="w-3 h-3 text-gray-400" />
+                    {venue.lat.toFixed(4)}, {venue.lon.toFixed(4)}
+                  </div>
+                </td>
                 <td className="px-4 py-3">{venue.capacity || '-'}</td>
                 <td className="px-4 py-3">
                   <button

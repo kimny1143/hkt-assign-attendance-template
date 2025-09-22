@@ -52,10 +52,26 @@ export async function GET(request: NextRequest) {
     }
 
     // その日にまだアサインされていないスタッフを取得
-    const { data: allStaff } = await supabase
+    const { data: allStaff, error: staffError } = await supabase
       .from('staff')
-      .select('id, name, skill_tags')
+      .select(`
+        id,
+        name,
+        staff_skills (
+          skill_id,
+          skills (
+            id,
+            code,
+            label
+          )
+        )
+      `)
       .eq('active', true)
+
+    if (staffError) {
+      console.error('Staff query error:', staffError)
+    }
+    console.log('All staff data:', JSON.stringify(allStaff?.[0], null, 2)) // デバッグ用に1人目のデータを表示
 
     // アサイン済みのスタッフIDを抽出
     const assignedStaffIds = new Set()
@@ -67,8 +83,53 @@ export async function GET(request: NextRequest) {
       })
     })
 
-    // 利用可能なスタッフをフィルタ
-    const availableStaff = allStaff?.filter(staff => !assignedStaffIds.has(staff.id)) || []
+    // 必要な全スキルのIDを取得（照明、音響、配信、リギング）
+    const { data: allSkills } = await supabase
+      .from('skills')
+      .select('id, code')
+
+    console.log('All skills from DB:', allSkills) // デバッグ
+
+    const requiredSkillCodes = ['pa', 'sound_operator', 'lighting', 'backstage']
+    const requiredSkillIds = allSkills
+      ?.filter(skill => requiredSkillCodes.includes(skill.code))
+      .map(skill => skill.id) || []
+
+    console.log('Required skill IDs:', requiredSkillIds) // デバッグ
+
+    // 利用可能なスタッフをフィルタとスキルタグ整形
+    const availableStaff = allStaff?.filter(staff => !assignedStaffIds.has(staff.id))
+      .map((staff: any) => {
+        // スタッフのスキル情報を整形
+        const staffSkills = staff.staff_skills || []
+        const skillIds: number[] = []
+        const skillLabels: string[] = []
+
+        staffSkills.forEach((ss: any) => {
+          if (ss.skills) {
+            skillIds.push(ss.skills.id)
+            skillLabels.push(ss.skills.label || ss.skills.code)
+          }
+        })
+
+        const hasAllSkills = requiredSkillIds.length > 0 &&
+                           requiredSkillIds.every(skillId => skillIds.includes(skillId))
+
+        // デバッグログ
+        console.log(`Staff ${staff.name}:`, {
+          skillIds,
+          requiredSkillIds,
+          hasAllSkills
+        })
+
+        return {
+          id: staff.id,
+          name: staff.name,
+          skill_tags: skillLabels,
+          is_available: true, // 将来的に就業可能日程チェックを実装
+          has_all_skills: hasAllSkills // 全スキル保有フラグ
+        }
+      }) || []
 
     // データを整形（デバッグログ付き）
     console.log('Raw shifts data:', JSON.stringify(shifts?.[0], null, 2)) // DEBUG
@@ -109,7 +170,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       shifts: formattedShifts,
-      availableStaff
+      availableStaff,
+      requiredSkillIds // フロントエンドでのフィルタリング用
     })
 
   } catch (error) {

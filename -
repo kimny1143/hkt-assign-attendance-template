@@ -1,0 +1,244 @@
+SET session_replication_role = replica;
+
+--
+-- PostgreSQL database dump
+--
+
+\restrict RirOvFrGbAcW1fD7YmO2t5j91r8w3yQH1ZLhMU7sCT4yWVmaqnYBcchMNfQeiK7
+
+-- Dumped from database version 17.6
+-- Dumped by pg_dump version 17.6
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Data for Name: venues; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO "public"."venues" ("id", "name", "address", "lat", "lon", "capacity", "created_at") VALUES
+	('11111111-1111-1111-1111-111111111111', 'マリンメッセ福岡A館', '福岡県福岡市博多区沖浜町2-1', 33.5951, 130.4137, 15000, '2025-09-13 14:41:11.750297+00'),
+	('22222222-2222-2222-2222-222222222222', '福岡サンパレス', '福岡県福岡市博多区築港本町2-1', 33.5948, 130.4077, 2300, '2025-09-13 14:41:11.750297+00'),
+	('f48bff0c-b2bb-4a5f-9e7d-7ad5a293603e', 'kimny自宅', '東京都八王子市子安町2-27-5', 35.660063, 139.343439, 10, '2025-09-22 09:55:29.889111+00'),
+	('99999999-9999-9999-9999-999999999999', 'J:COMホール八王子', '東京都八王子市旭町1-1', 35.6555, 139.3389, 1000, '2025-09-16 04:57:05.099715+00'),
+	('c52c7de0-619f-40bc-ada8-a5f61271d0da', 'HKT48劇場', '福岡県福岡市中央区地行浜2-2-6', 33.594341, 130.362411, 272, '2025-09-22 09:59:13.178757+00');
+
+
+--
+-- Data for Name: events; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO "public"."events" ("id", "venue_id", "event_date", "open_time", "start_time", "end_time", "notes", "created_at", "name") VALUES
+	('e1111111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', '2025-09-16', '17:00:00', '19:00:00', '22:00:00', 'テストライブA', '2025-09-13 14:41:11.750297+00', NULL),
+	('e2222222-2222-2222-2222-222222222222', '22222222-2222-2222-2222-222222222222', '2025-09-20', '16:00:00', '18:00:00', '21:00:00', 'コンサートB', '2025-09-13 14:41:11.750297+00', NULL),
+	('33333333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111', '2025-09-16', NULL, NULL, NULL, NULL, '2025-09-16 04:44:48.436726+00', '八王子テストイベント'),
+	('5d1fe50b-5f29-477d-a0dd-9c7941993d97', '99999999-9999-9999-9999-999999999999', '2025-09-16', NULL, NULL, NULL, NULL, '2025-09-16 04:58:36.812951+00', NULL),
+	('62f26e85-a7ac-4ec4-897e-4885c772aebb', 'f48bff0c-b2bb-4a5f-9e7d-7ad5a293603e', '2025-09-22', '20:00:00', '21:00:00', '23:45:00', '自宅テスト', '2025-09-22 10:01:32.297677+00', NULL);
+
+
+--
+-- Data for Name: shifts; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO "public"."shifts" ("id", "event_id", "start_ts", "end_ts", "required", "created_at", "name", "skill_id") VALUES
+	('b8cca48c-a5b4-457e-9295-e39f3c0ffb99', '5d1fe50b-5f29-477d-a0dd-9c7941993d97', '2025-09-16 09:00:00+00', '2025-09-16 18:00:00+00', 2, '2025-09-16 04:58:47.946147+00', '照明・リギング設営（八王子テスト）', 3),
+	('c3c4bd91-d593-45cd-b7b7-c9c4ee045d51', '62f26e85-a7ac-4ec4-897e-4885c772aebb', '2025-09-22 11:00:00+00', '2025-09-22 14:00:00+00', 1, '2025-09-22 10:06:00.960373+00', 'kimny自宅 業務枠', 1);
+
+
+--
+-- Data for Name: staff; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO "public"."staff" ("id", "user_id", "code", "name", "phone", "email", "address", "lat", "lon", "hourly_rate", "daily_rate", "project_rate", "active", "created_at") VALUES
+	('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'bad06d10-4c07-46f2-ae49-f315d779e2eb', 'ADM001', '管理 太郎', '090-1111-1111', 'admin@haas.test', '福岡県福岡市中央区天神1-1-1', 33.5904, 130.4017, NULL, NULL, NULL, true, '2025-09-13 14:41:11.750297+00'),
+	('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'c02ee0ee-a9eb-4c50-b8da-ab6e42fbc0d4', 'MGR001', 'マネージャー 花子', '090-2222-2222', 'manager@haas.test', '福岡県福岡市博多区博多駅前1-1-1', 33.5897, 130.4207, NULL, NULL, NULL, true, '2025-09-13 14:41:11.750297+00'),
+	('dddddddd-dddd-dddd-dddd-dddddddddddd', 'b814f2e7-5cb5-4d75-86a3-c6708ee5762a', 'STF002', 'リギング 次郎', '090-4444-4444', 'staff2@haas.test', '福岡県福岡市東区香椎1-1-1', 33.6597, 130.4438, 1800.00, 18000.00, NULL, true, '2025-09-13 14:41:11.750297+00'),
+	('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', '57a82725-0c68-403d-8206-470bef7d80b8', 'STF003', 'オペ 三郎', '090-5555-5555', 'staff3@haas.test', '福岡県福岡市南区大橋1-1-1', 33.5749, 130.4262, 2000.00, 20000.00, NULL, true, '2025-09-13 14:41:11.750297+00'),
+	('cccccccc-cccc-cccc-cccc-cccccccccccc', 'fa9a6d05-2986-46d0-9f0e-6df74018d6ff', 'STF001', '照明 一郎', '090-3333-3333', 'staff1@haas.test', '福岡県福岡市早良区西新1-1-1', 33.5826, 130.3598, 1500.00, 15000.00, NULL, true, '2025-09-13 14:41:11.750297+00');
+
+
+--
+-- Data for Name: assignments; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO "public"."assignments" ("id", "shift_id", "staff_id", "status", "score", "candidate_sent_at", "accepted_at", "declined_at", "created_at", "is_reserve") VALUES
+	('59acea1d-3474-45d4-9fbc-e6d5772ded76', 'b8cca48c-a5b4-457e-9295-e39f3c0ffb99', 'cccccccc-cccc-cccc-cccc-cccccccccccc', 'confirmed', NULL, NULL, NULL, NULL, '2025-09-16 04:58:59.187661+00', false),
+	('4531a830-df85-4057-b09d-afc80f3ae83c', 'b8cca48c-a5b4-457e-9295-e39f3c0ffb99', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'confirmed', NULL, NULL, '2025-09-16 06:18:29.478+00', NULL, '2025-09-16 06:18:29.552074+00', false);
+
+
+--
+-- Data for Name: attendances; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO "public"."attendances" ("id", "staff_id", "shift_id", "check_in_ts", "check_in_lat", "check_in_lon", "check_in_equipment_qr", "check_out_ts", "check_out_lat", "check_out_lon", "check_out_equipment_qr", "status", "reviewer_id", "review_comment", "created_at", "updated_at") VALUES
+	('406ace78-0cc7-4e4f-b311-b80440755ede', 'cccccccc-cccc-cccc-cccc-cccccccccccc', 'b8cca48c-a5b4-457e-9295-e39f3c0ffb99', '2025-09-16 05:11:06.20506+00', 35.65560730280787, 139.33884447294017, 'HACHIOJI-LIGHT-001', '2025-09-16 05:11:44.104718+00', 35.65560730280787, 139.33884447294017, 'HACHIOJI-LIGHT-001', 'pending', NULL, NULL, '2025-09-16 05:11:06.20506+00', '2025-09-16 05:11:06.20506+00');
+
+
+--
+-- Data for Name: audit_logs; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+
+
+--
+-- Data for Name: cleanup_backup_summary_20250120; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO "public"."cleanup_backup_summary_20250120" ("backup_id", "table_name", "record_count", "action_planned", "backed_up_at") VALUES
+	('93f059e2-953d-47d1-9fc9-6d2c3003d9cf', 'roles', 2, 'DROP TABLE - replaced by skills', '2025-09-20 03:23:05.536045+00'),
+	('767503ff-8b0d-4cdb-a8d3-fd20f49964e6', 'shifts.role_id', 8, 'DROP COLUMN - replaced by skill_id', '2025-09-20 03:23:05.536045+00'),
+	('39163d6d-803b-4117-8b18-ec2b1da01964', 'staff.skill_tags', 5, 'DROP COLUMN - replaced by staff_skills table', '2025-09-20 03:23:05.536045+00'),
+	('e2ce846d-da85-4654-bb9c-6753199c69b4', 'audit_logs', 0, 'KEEP or DROP based on requirements', '2025-09-20 03:23:05.536045+00'),
+	('ddde951f-b122-453b-bf40-d4ccf4305a0a', 'expenses', 0, 'KEEP or DROP based on requirements', '2025-09-20 03:23:05.536045+00');
+
+
+--
+-- Data for Name: cleanup_report_20250120; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO "public"."cleanup_report_20250120" ("id", "action", "status", "details", "executed_at") VALUES
+	(1, 'Drop shifts.role_id', 'COMPLETED', 'Column removed successfully', '2025-09-20 03:27:01.225577+00'),
+	(2, 'Drop staff.skill_tags', 'COMPLETED', 'Column removed successfully', '2025-09-20 03:27:01.225577+00'),
+	(3, 'Drop roles table', 'COMPLETED', 'Table removed successfully', '2025-09-20 03:27:01.225577+00'),
+	(4, 'Keep audit_logs table', 'RETAINED', 'Table retained with 0 records', '2025-09-20 03:27:01.225577+00'),
+	(5, 'Keep expenses table', 'RETAINED', 'Table retained with 0 records', '2025-09-20 03:27:01.225577+00'),
+	(6, 'Clean orphaned data', 'COMPLETED', 'Removed orphaned records from assignments and attendances', '2025-09-20 03:27:01.225577+00'),
+	(7, 'Update documentation', 'COMPLETED', 'Table comments updated', '2025-09-20 03:27:01.225577+00');
+
+
+--
+-- Data for Name: equipment; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO "public"."equipment" ("id", "venue_id", "name", "qr_code", "equipment_type", "location_hint", "active", "created_at") VALUES
+	('a43cc749-3844-489d-8fc5-d5016ad186b4', 'f48bff0c-b2bb-4a5f-9e7d-7ad5a293603e', 'リビングのテレビ', 'KIMNY-OTHERS-001', 'other', 'リビングの窓際', true, '2025-09-22 10:07:24.530893+00');
+
+
+--
+-- Data for Name: expenses; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+
+
+--
+-- Data for Name: roles_backup_20250120; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO "public"."roles_backup_20250120" ("id", "code", "label", "backed_up_at", "backup_reason") VALUES
+	(1, 'lighting', '照明', '2025-09-20 03:23:05.536045+00', 'Before removal - replaced by skills table'),
+	(2, 'rigging', 'リギング', '2025-09-20 03:23:05.536045+00', 'Before removal - replaced by skills table');
+
+
+--
+-- Data for Name: shifts_role_mapping_backup_20250120; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO "public"."shifts_role_mapping_backup_20250120" ("shift_id", "old_role_id", "old_role_code", "new_skill_id", "new_skill_code", "backed_up_at") VALUES
+	('5073ba4a-8185-4443-acaa-dc18ac83ea21', 1, 'lighting', 3, 'lighting', '2025-09-20 03:23:05.536045+00'),
+	('3a936478-c5df-4905-82f3-0762c1681a82', 2, 'rigging', 4, 'backstage', '2025-09-20 03:23:05.536045+00'),
+	('953cf451-e5e4-4bdd-9f2a-7434d68fdd25', 1, 'lighting', 3, 'lighting', '2025-09-20 03:23:05.536045+00'),
+	('5d39a8bf-c75d-4ef2-880a-c122f5a2a236', 2, 'rigging', 4, 'backstage', '2025-09-20 03:23:05.536045+00'),
+	('1a807dc8-1e17-4ee3-8e02-e633b102f907', 1, 'lighting', 3, 'lighting', '2025-09-20 03:23:05.536045+00'),
+	('71a62dd3-8e84-4515-a1cd-1c06b27a8ab8', 2, 'rigging', 4, 'backstage', '2025-09-20 03:23:05.536045+00'),
+	('44444444-4444-4444-4444-444444444444', 1, 'lighting', 3, 'lighting', '2025-09-20 03:23:05.536045+00'),
+	('b8cca48c-a5b4-457e-9295-e39f3c0ffb99', 1, 'lighting', 3, 'lighting', '2025-09-20 03:23:05.536045+00');
+
+
+--
+-- Data for Name: skills; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO "public"."skills" ("id", "code", "label", "description", "created_at") VALUES
+	(1, 'pa', 'PA', 'PAシステムの操作・音響調整', '2025-09-20 03:12:40.56383+00'),
+	(2, 'sound_operator', '音源再生マニピュレーター', '音源の再生・タイミング管理', '2025-09-20 03:12:40.56383+00'),
+	(3, 'lighting', '照明', '照明機材の操作・演出', '2025-09-20 03:12:40.56383+00'),
+	(4, 'backstage', 'バックヤード', '舞台裏の準備・サポート', '2025-09-20 03:12:40.56383+00');
+
+
+--
+-- Data for Name: spatial_ref_sys; Type: TABLE DATA; Schema: public; Owner: supabase_admin
+--
+
+
+
+--
+-- Data for Name: staff_schedules; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+
+
+--
+-- Data for Name: staff_skill_tags_backup_20250120; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO "public"."staff_skill_tags_backup_20250120" ("staff_id", "staff_name", "skill_tags", "tag_count", "backed_up_at") VALUES
+	('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '管理 太郎', '{admin,lighting,rigging}', 3, '2025-09-20 03:23:05.536045+00'),
+	('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'マネージャー 花子', '{manager,lighting}', 2, '2025-09-20 03:23:05.536045+00'),
+	('dddddddd-dddd-dddd-dddd-dddddddddddd', 'リギング 次郎', '{rigging}', 1, '2025-09-20 03:23:05.536045+00'),
+	('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'オペ 三郎', '{lighting,rigging}', 2, '2025-09-20 03:23:05.536045+00'),
+	('cccccccc-cccc-cccc-cccc-cccccccccccc', '照明 一郎', '{lighting}', 1, '2025-09-20 03:23:05.536045+00');
+
+
+--
+-- Data for Name: staff_skills; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO "public"."staff_skills" ("id", "staff_id", "skill_id", "proficiency_level", "certified", "created_at") VALUES
+	('68e75f2b-0dbd-4b41-8096-577f20ec1296', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 4, 3, false, '2025-09-20 03:27:01.225577+00'),
+	('e3c9051e-84a2-43d6-8ea6-9b1712dba3c0', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 3, 3, false, '2025-09-20 03:27:01.225577+00'),
+	('7ee734c3-64e7-4652-8644-5e7bd365551c', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 3, 3, false, '2025-09-20 03:27:01.225577+00'),
+	('8ede9430-3f1c-4b31-8244-40e1303cf618', 'cccccccc-cccc-cccc-cccc-cccccccccccc', 3, 3, false, '2025-09-20 03:27:01.225577+00'),
+	('c2050b8f-0f1d-4f95-be00-19c1a0c38b8f', 'dddddddd-dddd-dddd-dddd-dddddddddddd', 4, 3, false, '2025-09-20 03:27:01.225577+00'),
+	('4e4489ae-5270-4d79-b306-2d3158b6d267', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 4, 3, false, '2025-09-20 03:27:01.225577+00'),
+	('073c8845-3600-4490-8755-cbb72c13c5cf', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 3, 3, false, '2025-09-20 03:27:01.225577+00');
+
+
+--
+-- Data for Name: user_roles; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO "public"."user_roles" ("id", "staff_id", "role", "granted_at", "granted_by") VALUES
+	('9cc2ae3e-7610-4318-9623-156867bc6c81', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'admin', '2025-09-13 14:41:11.750297+00', NULL),
+	('843fd98d-f617-4775-be68-6dd0e42f088b', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'manager', '2025-09-13 14:41:11.750297+00', NULL),
+	('7860d65f-ae43-4ce6-ab7c-c1167855fdc0', 'cccccccc-cccc-cccc-cccc-cccccccccccc', 'staff', '2025-09-13 14:41:11.750297+00', NULL),
+	('9df9814e-4095-4d09-989a-dca13c92e77a', 'dddddddd-dddd-dddd-dddd-dddddddddddd', 'staff', '2025-09-13 14:41:11.750297+00', NULL),
+	('8de2dc40-8940-47bf-8c07-a26daa51c8ad', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'staff', '2025-09-13 14:41:11.750297+00', NULL);
+
+
+--
+-- Name: audit_logs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('"public"."audit_logs_id_seq"', 1, false);
+
+
+--
+-- Name: cleanup_report_20250120_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('"public"."cleanup_report_20250120_id_seq"', 7, true);
+
+
+--
+-- Name: skills_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('"public"."skills_id_seq"', 20, true);
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict RirOvFrGbAcW1fD7YmO2t5j91r8w3yQH1ZLhMU7sCT4yWVmaqnYBcchMNfQeiK7
+
+RESET ALL;

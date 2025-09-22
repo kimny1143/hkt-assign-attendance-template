@@ -8,7 +8,7 @@ interface Skill {
   id: number
   code: string
   label: string
-  description: string
+  description?: string
 }
 
 interface SkillAssignment {
@@ -21,14 +21,19 @@ export default function NewStaffPage() {
   const [availableSkills, setAvailableSkills] = useState<Skill[]>([])
   const [formData, setFormData] = useState({
     name: '',
+    code: '',
     email: '',
     phone: '',
     address: '',
     hourly_rate: '',
     daily_rate: '',
     project_rate: '',
+    password: '',
+    confirmPassword: '',
     skills: [] as SkillAssignment[]
   })
+  const [selectedRole, setSelectedRole] = useState<string>('staff')
+  const [passwordMethod, setPasswordMethod] = useState<'manual' | 'invite'>('manual') // 開発中はデフォルトで手動設定
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -39,11 +44,11 @@ export default function NewStaffPage() {
 
   const fetchSkills = async () => {
     try {
-      const response = await fetch('/api/admin/skills')
-      if (response.ok) {
-        const data = await response.json()
-        setAvailableSkills(data.skills || [])
-      }
+      // Repository経由でスキル取得（将来的にAPI化しても変更不要）
+      const { SkillRepository } = await import('@/lib/repositories/skillRepository')
+      const skillRepo = new SkillRepository()
+      const skills = await skillRepo.getAll()
+      setAvailableSkills(skills)
     } catch (err) {
       console.error('Failed to fetch skills:', err)
     }
@@ -104,30 +109,68 @@ export default function NewStaffPage() {
     setLoading(true)
     setError(null)
 
+    // パスワード確認（手動設定の場合）
+    if (passwordMethod === 'manual') {
+      if (!formData.password) {
+        setError('パスワードを入力してください')
+        setLoading(false)
+        return
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setError('パスワードが一致しません')
+        setLoading(false)
+        return
+      }
+      if (formData.password.length < 6) {
+        setError('パスワードは6文字以上で設定してください')
+        setLoading(false)
+        return
+      }
+    }
+
+    // メールアドレス必須チェック（パスワード設定がある場合）
+    if ((passwordMethod === 'manual' || passwordMethod === 'invite') && !formData.email) {
+      setError('ログイン設定にはメールアドレスが必要です')
+      setLoading(false)
+      return
+    }
+
     try {
-      const submitData = {
-        ...formData,
-        hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : undefined,
-        daily_rate: formData.daily_rate ? parseFloat(formData.daily_rate) : undefined,
-        project_rate: formData.project_rate ? parseFloat(formData.project_rate) : undefined
+      // Repository経由でスタッフ作成（将来的にAPI化しても変更不要）
+      const { StaffRepository } = await import('@/lib/repositories/staffRepository')
+      const staffRepo = new StaffRepository()
+
+      console.log('Form data before submission:', formData); // デバッグ
+
+      const staffData = {
+        name: formData.name,
+        code: formData.code || null,
+        email: formData.email || null,
+        phone: formData.phone || null,
+        address: formData.address || null,
+        hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
+        daily_rate: formData.daily_rate ? parseFloat(formData.daily_rate) : null,
+        project_rate: formData.project_rate ? parseFloat(formData.project_rate) : null,
+        active: true
       }
 
-      const response = await fetch('/api/admin/staff', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(submitData)
-      })
+      console.log('Staff data to be saved:', staffData); // デバッグ
 
-      if (response.ok) {
-        router.push('/admin/staff')
+      // パスワードは手動設定の場合のみ渡す
+      const password = passwordMethod === 'manual' ? formData.password : undefined
+
+      await staffRepo.create(staffData, formData.skills, selectedRole, password)
+
+      if (passwordMethod === 'invite' && formData.email) {
+        // TODO: 招待メール送信処理
+        alert('スタッフを登録しました。招待メールを送信してください。')
       } else {
-        const data = await response.json()
-        setError(data.error || 'スタッフの作成に失敗しました')
+        alert('スタッフを登録しました。')
       }
+
+      router.push('/admin/staff')
     } catch (err) {
-      setError('エラーが発生しました')
+      setError(err instanceof Error ? err.message : 'スタッフの作成に失敗しました')
     } finally {
       setLoading(false)
     }
@@ -152,109 +195,226 @@ export default function NewStaffPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded shadow">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            名前 <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleInputChange}
-            required
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
+        {/* 基本情報 */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold border-b pb-2">基本情報</h2>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              メールアドレス
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                名前 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                スタッフコード
+              </label>
+              <input
+                type="text"
+                name="code"
+                value={formData.code}
+                onChange={handleInputChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              電話番号
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            住所
-          </label>
-          <input
-            type="text"
-            name="address"
-            value={formData.address}
-            onChange={handleInputChange}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              時給
-            </label>
-            <input
-              type="number"
-              name="hourly_rate"
-              value={formData.hourly_rate}
-              onChange={handleInputChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="1500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              日給
-            </label>
-            <input
-              type="number"
-              name="daily_rate"
-              value={formData.daily_rate}
-              onChange={handleInputChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="12000"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              プロジェクト単価
-            </label>
-            <input
-              type="number"
-              name="project_rate"
-              value={formData.project_rate}
-              onChange={handleInputChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="50000"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                権限ロール
+              </label>
+              <select
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="staff">スタッフ</option>
+                <option value="manager">マネージャー</option>
+                <option value="admin">管理者</option>
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                管理者: 全権限 / マネージャー: イベント管理 / スタッフ: 基本権限
+              </p>
+            </div>
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            スキル
-          </label>
+        {/* 連絡先情報 */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold border-b pb-2">連絡先</h2>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                メールアドレス
+                {(passwordMethod === 'manual' || passwordMethod === 'invite') && (
+                  <span className="text-red-500"> *</span>
+                )}
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                required={passwordMethod === 'manual' || passwordMethod === 'invite'}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                電話番号
+              </label>
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleInputChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              住所
+            </label>
+            <input
+              type="text"
+              name="address"
+              value={formData.address}
+              onChange={handleInputChange}
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        </div>
+
+        {/* ログイン設定 */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold border-b pb-2">ログイン設定</h2>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              パスワード設定方法
+            </label>
+            <div className="space-x-4">
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  value="invite"
+                  checked={passwordMethod === 'invite'}
+                  onChange={(e) => setPasswordMethod(e.target.value as 'invite' | 'manual')}
+                  className="mr-2"
+                />
+                <span>後で招待メールを送信</span>
+              </label>
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  value="manual"
+                  checked={passwordMethod === 'manual'}
+                  onChange={(e) => setPasswordMethod(e.target.value as 'invite' | 'manual')}
+                  className="mr-2"
+                />
+                <span>今すぐパスワードを設定</span>
+              </label>
+            </div>
+          </div>
+
+          {passwordMethod === 'manual' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  パスワード <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="6文字以上"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  パスワード（確認） <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="もう一度入力"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 報酬設定 */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold border-b pb-2">報酬設定</h2>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                時給（円）
+              </label>
+              <input
+                type="number"
+                name="hourly_rate"
+                value={formData.hourly_rate}
+                onChange={handleInputChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="1500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                日給（円）
+              </label>
+              <input
+                type="number"
+                name="daily_rate"
+                value={formData.daily_rate}
+                onChange={handleInputChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="12000"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                プロジェクト単価（円）
+              </label>
+              <input
+                type="number"
+                name="project_rate"
+                value={formData.project_rate}
+                onChange={handleInputChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="50000"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* スキル設定 */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold border-b pb-2">スキル</h2>
           <div className="space-y-4 border border-gray-200 rounded-md p-4">
             {availableSkills.map((skill) => {
               const assigned = formData.skills.find(s => s.skill_id === skill.id)
@@ -306,7 +466,8 @@ export default function NewStaffPage() {
           </div>
         </div>
 
-        <div className="flex justify-end space-x-4">
+        {/* 送信ボタン */}
+        <div className="flex justify-end space-x-4 pt-4 border-t">
           <Link
             href="/admin/staff"
             className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
