@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { QrScanner } from '@yudiel/react-qr-scanner'
+import { Scanner } from '@yudiel/react-qr-scanner'
 
 interface TodayAssignment {
   id: string
@@ -143,9 +143,9 @@ export default function PunchPage() {
   }
 
   // QRコード読み取り成功時の処理
-  const handleQrScanSuccess = (result: string) => {
-    if (result) {
-      setEquipmentQr(result)
+  const handleQrScanSuccess = (result: string[]) => {
+    if (result && result.length > 0 && result[0]) {
+      setEquipmentQr(result[0])
       setScannerActive(false)
       setMessage('✅ QRコード読み取り完了')
     }
@@ -294,10 +294,10 @@ export default function PunchPage() {
             ) : (
               <div className="space-y-2">
                 <div className="relative rounded-lg overflow-hidden bg-black" style={{ aspectRatio: '1' }}>
-                  <QrScanner
-                    onDecode={handleQrScanSuccess}
+                  <Scanner
+                    onScan={handleQrScanSuccess}
                     onError={handleQrScanError}
-                    containerStyle={{ width: '100%', height: '100%' }}
+                    styles={{ container: { width: '100%', height: '100%' } }}
                   />
                 </div>
                 <div className="flex gap-2">
