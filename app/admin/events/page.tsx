@@ -149,6 +149,26 @@ export default function EventsPage() {
     });
   };
 
+  const formatTime = (timeStr: string | null) => {
+    if (!timeStr) return '-';
+
+    // time型のデータをJSTに変換
+    // Supabaseから来る時刻は "HH:MM:SS" または Date形式の可能性がある
+    if (timeStr.includes(':') && timeStr.length <= 8) {
+      // "HH:MM:SS" 形式の場合はそのまま返す
+      return timeStr.substring(0, 5);
+    }
+
+    // Date形式の場合は日本時間で表示
+    const date = new Date(timeStr);
+    return date.toLocaleTimeString('ja-JP', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'Asia/Tokyo'
+    });
+  };
+
   if (loading) return <div className="p-4">読み込み中...</div>;
 
   return (
@@ -278,7 +298,7 @@ export default function EventsPage() {
                 <td className="px-4 py-3 font-medium">{formatDate(event.event_date)}</td>
                 <td className="px-4 py-3">{event.venues?.name || '-'}</td>
                 <td className="px-4 py-3 text-sm">
-                  開場 {event.open_time || '-'} / 開演 {event.start_time || '-'} / 終演 {event.end_time || '-'}
+                  開場 {formatTime(event.open_time)} / 開演 {formatTime(event.start_time)} / 終演 {formatTime(event.end_time)}
                 </td>
                 <td className="px-4 py-3 text-sm">{event.notes || '-'}</td>
                 <td className="px-4 py-3">
@@ -319,11 +339,11 @@ export default function EventsPage() {
                   <div className="flex items-center gap-1">
                     <Clock className="w-3 h-3 text-gray-400" />
                     <p className="text-xs text-gray-500">
-                      <span className="font-medium">開場:</span> {event.open_time || '-'}
+                      <span className="font-medium">開場:</span> {formatTime(event.open_time)}
                     </p>
                   </div>
                   <p className="text-xs text-gray-500 ml-4">
-                    <span className="font-medium">開演:</span> {event.start_time || '-'} | <span className="font-medium">終演:</span> {event.end_time || '-'}
+                    <span className="font-medium">開演:</span> {formatTime(event.start_time)} | <span className="font-medium">終演:</span> {formatTime(event.end_time)}
                   </p>
                   {event.notes && (
                     <p className="text-xs text-gray-500 ml-4">
