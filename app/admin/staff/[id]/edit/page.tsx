@@ -60,6 +60,9 @@ export default function StaffEditPage() {
   }>({});
 
   const [selectedRole, setSelectedRole] = useState<string>('staff');
+  const [changePassword, setChangePassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -184,6 +187,25 @@ export default function StaffEditPage() {
     setSaving(true);
     setError(null);
 
+    // パスワード変更のバリデーション
+    if (changePassword) {
+      if (!newPassword) {
+        setError('新しいパスワードを入力してください');
+        setSaving(false);
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        setError('パスワードが一致しません');
+        setSaving(false);
+        return;
+      }
+      if (newPassword.length < 6) {
+        setError('パスワードは6文字以上で設定してください');
+        setSaving(false);
+        return;
+      }
+    }
+
     try {
       const { StaffRepository } = await import('@/lib/repositories/staffRepository');
       const staffRepo = new StaffRepository();
@@ -211,6 +233,20 @@ export default function StaffEditPage() {
       }));
 
       await staffRepo.update(params.id as string, staffData, skills, selectedRole);
+
+      // パスワード変更処理
+      if (changePassword && formData.email) {
+        const { AuthRepository } = await import('@/lib/repositories/authRepository');
+        const authRepo = new AuthRepository();
+        try {
+          await authRepo.updatePassword(formData.email, newPassword);
+          alert('パスワードを更新しました');
+        } catch (pwError) {
+          // パスワード更新エラーは警告のみ（スタッフ情報は保存済み）
+          console.error('Password update error:', pwError);
+          alert(`スタッフ情報は保存しましたが、パスワード更新に問題がありました: ${pwError instanceof Error ? pwError.message : 'エラー'}`);
+        }
+      }
 
       router.push(`/admin/staff/${params.id}`);
     } catch (err) {
@@ -363,6 +399,61 @@ export default function StaffEditPage() {
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2"
             />
           </div>
+        </div>
+
+        {/* パスワード設定 */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold border-b pb-2">パスワード設定</h2>
+
+          <div>
+            <label className="inline-flex items-center">
+              <input
+                type="checkbox"
+                checked={changePassword}
+                onChange={(e) => setChangePassword(e.target.checked)}
+                className="mr-2"
+              />
+              <span>パスワードを変更する</span>
+            </label>
+          </div>
+
+          {changePassword && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  新しいパスワード <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2"
+                  placeholder="6文字以上"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  パスワード（確認） <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2"
+                  placeholder="もう一度入力"
+                />
+              </div>
+            </div>
+          )}
+          {formData.email ? (
+            <p className="text-sm text-gray-500">
+              メールアドレス: {formData.email}
+            </p>
+          ) : (
+            <p className="text-sm text-red-500">
+              パスワード変更にはメールアドレスの登録が必要です
+            </p>
+          )}
         </div>
 
         {/* 報酬設定 */}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { MapPin, Navigation, Search } from 'lucide-react';
+import { MapPin, Navigation, Search, Package, Plus, Trash2 } from 'lucide-react';
 
 type Venue = {
   id: string;
@@ -14,8 +14,20 @@ type Venue = {
   created_at: string;
 };
 
+type Equipment = {
+  id: string;
+  venue_id: string;
+  name: string;
+  qr_code: string;
+  equipment_type: 'light' | 'sound' | 'other';
+  location_hint?: string;
+  active: boolean;
+  created_at: string;
+};
+
 export default function VenuesPage() {
   const [venues, setVenues] = useState<Venue[]>([]);
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -27,6 +39,13 @@ export default function VenuesPage() {
   });
   const [gpsLoading, setGpsLoading] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
+  const [showEquipment, setShowEquipment] = useState(false);
+  const [newEquipment, setNewEquipment] = useState({
+    name: '',
+    qr_code: '',
+    equipment_type: 'other' as 'light' | 'sound' | 'other',
+    location_hint: ''
+  });
 
   const supabase = createClient();
 
@@ -86,7 +105,7 @@ export default function VenuesPage() {
     setFormData({ name: '', address: '', lat: '', lon: '', capacity: '' });
   };
 
-  const handleEdit = (venue: Venue) => {
+  const handleEdit = async (venue: Venue) => {
     setEditingId(venue.id);
     setFormData({
       name: venue.name,
@@ -95,6 +114,102 @@ export default function VenuesPage() {
       lon: venue.lon.toString(),
       capacity: venue.capacity?.toString() || ''
     });
+
+    // 機材情報を取得
+    const { data: equipmentData, error } = await supabase
+      .from('equipment')
+      .select('*')
+      .eq('venue_id', venue.id)
+      .order('created_at', { ascending: false });
+
+    if (!error && equipmentData) {
+      setEquipment(equipmentData);
+    }
+    setShowEquipment(true);
+  };
+
+  const handleCancel = () => {
+    setEditingId(null);
+    setFormData({ name: '', address: '', lat: '', lon: '', capacity: '' });
+    setEquipment([]);
+    setShowEquipment(false);
+    setNewEquipment({
+      name: '',
+      qr_code: '',
+      equipment_type: 'other',
+      location_hint: ''
+    });
+  };
+
+  const handleAddEquipment = async () => {
+    if (!editingId) {
+      alert('会場を選択してください');
+      return;
+    }
+    if (!newEquipment.name || !newEquipment.qr_code) {
+      alert('機材名とQRコードは必須です');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('equipment')
+      .insert([{
+        venue_id: editingId,
+        name: newEquipment.name,
+        qr_code: newEquipment.qr_code,
+        equipment_type: newEquipment.equipment_type,
+        location_hint: newEquipment.location_hint || null,
+        active: true
+      }]);
+
+    if (error) {
+      alert('機材追加エラー: ' + error.message);
+    } else {
+      // 機材リストを再取得
+      const { data: equipmentData } = await supabase
+        .from('equipment')
+        .select('*')
+        .eq('venue_id', editingId)
+        .order('created_at', { ascending: false });
+
+      if (equipmentData) {
+        setEquipment(equipmentData);
+      }
+
+      // フォームをリセット
+      setNewEquipment({
+        name: '',
+        qr_code: '',
+        equipment_type: 'other',
+        location_hint: ''
+      });
+    }
+  };
+
+  const handleDeleteEquipment = async (equipmentId: string) => {
+    if (!confirm('この機材を削除してもよろしいですか？')) return;
+
+    const { error } = await supabase
+      .from('equipment')
+      .delete()
+      .eq('id', equipmentId);
+
+    if (error) {
+      alert('機材削除エラー: ' + error.message);
+    } else {
+      // 機材リストを再取得
+      if (editingId) {
+        const { data: equipmentData } = await supabase
+          .from('equipment')
+          .select('*')
+          .eq('venue_id', editingId)
+          .order('created_at', { ascending: false });
+
+        if (equipmentData) {
+          setEquipment(equipmentData);
+        }
+      }
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -299,10 +414,7 @@ export default function VenuesPage() {
           {editingId && (
             <button
               type="button"
-              onClick={() => {
-                setEditingId(null);
-                setFormData({ name: '', address: '', lat: '', lon: '', capacity: '' });
-              }}
+              onClick={handleCancel}
               className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
             >
               キャンセル
@@ -310,6 +422,99 @@ export default function VenuesPage() {
           )}
         </div>
       </form>
+
+      {/* 機材管理セクション */}
+      {editingId && showEquipment && (
+        <div className="bg-white p-6 rounded-lg shadow mb-6">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Package className="w-5 h-5" />
+            機材管理
+          </h2>
+
+          {/* 機材追加フォーム */}
+          <div className="mb-4 p-4 border rounded-md bg-gray-50">
+            <h3 className="text-sm font-medium mb-3">新規機材登録</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input
+                type="text"
+                placeholder="機材名"
+                value={newEquipment.name}
+                onChange={(e) => setNewEquipment({ ...newEquipment, name: e.target.value })}
+                className="px-3 py-2 border rounded-md"
+              />
+              <input
+                type="text"
+                placeholder="QRコード"
+                value={newEquipment.qr_code}
+                onChange={(e) => setNewEquipment({ ...newEquipment, qr_code: e.target.value })}
+                className="px-3 py-2 border rounded-md"
+              />
+              <select
+                value={newEquipment.equipment_type}
+                onChange={(e) => setNewEquipment({
+                  ...newEquipment,
+                  equipment_type: e.target.value as 'light' | 'sound' | 'other'
+                })}
+                className="px-3 py-2 border rounded-md"
+              >
+                <option value="light">照明</option>
+                <option value="sound">音響</option>
+                <option value="other">その他</option>
+              </select>
+              <input
+                type="text"
+                placeholder="設置場所のヒント（任意）"
+                value={newEquipment.location_hint}
+                onChange={(e) => setNewEquipment({ ...newEquipment, location_hint: e.target.value })}
+                className="px-3 py-2 border rounded-md"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleAddEquipment}
+              className="mt-3 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              機材を追加
+            </button>
+          </div>
+
+          {/* 機材リスト */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium mb-2">登録済み機材</h3>
+            {equipment.length === 0 ? (
+              <p className="text-gray-500 text-sm">機材が登録されていません</p>
+            ) : (
+              equipment.map((item) => (
+                <div
+                  key={item.id}
+                  className={`p-3 border rounded-md flex justify-between items-center ${
+                    item.active ? 'bg-white' : 'bg-gray-100'
+                  }`}
+                >
+                  <div>
+                    <span className="font-medium">{item.name}</span>
+                    <span className="ml-2 text-sm text-gray-600">
+                      ({item.equipment_type === 'light' ? '照明' :
+                        item.equipment_type === 'sound' ? '音響' : 'その他'})
+                    </span>
+                    <div className="text-xs text-gray-500">
+                      QR: {item.qr_code}
+                      {item.location_hint && ` | 場所: ${item.location_hint}`}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteEquipment(item.id)}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full">

@@ -3,6 +3,22 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
+interface TodayAssignment {
+  id: string
+  shifts: {
+    id: string
+    start_ts: string
+    end_ts: string
+    events: {
+      name: string
+      venues: {
+        name: string
+        address: string
+      }
+    }
+  }
+}
+
 export default function PunchPage() {
   const [equipmentQr, setEquipmentQr] = useState('')
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null)
@@ -10,6 +26,7 @@ export default function PunchPage() {
   const [message, setMessage] = useState('')
   const [scannerActive, setScannerActive] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const [todayAssignments, setTodayAssignments] = useState<TodayAssignment[]>([])
   const router = useRouter()
 
   // 認証チェックとGPS自動取得
@@ -27,8 +44,23 @@ export default function PunchPage() {
       }
       const data = await res.json()
       setUser(data.user)
+
+      // 本日のアサインメントを取得
+      await fetchTodayAssignments(data.user.id)
     } catch (error) {
       router.push('/login')
+    }
+  }
+
+  const fetchTodayAssignments = async (userId: string) => {
+    try {
+      const res = await fetch('/api/assignments/today')
+      if (res.ok) {
+        const data = await res.json()
+        setTodayAssignments(data.assignments || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch assignments:', error)
     }
   }
 
@@ -177,6 +209,32 @@ export default function PunchPage() {
         </div>
 
         <div className="bg-white rounded-b-lg shadow-lg p-6 space-y-6">
+          {/* 本日のワークスケジュール */}
+          {todayAssignments.length > 0 && (
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h3 className="font-semibold mb-2">📅 本日のワークスケジュール</h3>
+              {todayAssignments.map((assignment) => (
+                <div key={assignment.id} className="text-sm space-y-1">
+                  <div className="font-medium">{assignment.shifts.events.name}</div>
+                  <div className="text-gray-600">
+                    📍 {assignment.shifts.events.venues.name}
+                  </div>
+                  <div className="text-gray-500">
+                    {new Date(assignment.shifts.start_ts).toLocaleTimeString('ja-JP', {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                    〜
+                    {new Date(assignment.shifts.end_ts).toLocaleTimeString('ja-JP', {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* GPS状態 */}
           <div className="bg-gray-100 p-4 rounded-lg">
             <div className="flex items-center justify-between mb-2">
