@@ -237,15 +237,14 @@ export default function PunchPage() {
                     📍 {assignment.shifts.events.venues.name}
                   </div>
                   <div className="text-gray-500">
-                    {new Date(assignment.shifts.start_ts).toLocaleTimeString('ja-JP', {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                    〜
-                    {new Date(assignment.shifts.end_ts).toLocaleTimeString('ja-JP', {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
+                    {(() => {
+                      // タイムスタンプから時刻部分を直接抽出
+                      const startMatch = assignment.shifts.start_ts.match(/T(\d{2}):(\d{2})/);
+                      const endMatch = assignment.shifts.end_ts.match(/T(\d{2}):(\d{2})/);
+                      const startTime = startMatch ? `${startMatch[1]}:${startMatch[2]}` : '--:--';
+                      const endTime = endMatch ? `${endMatch[1]}:${endMatch[2]}` : '--:--';
+                      return `${startTime}〜${endTime}`;
+                    })()}
                   </div>
                 </div>
               ))}
