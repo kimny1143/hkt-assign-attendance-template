@@ -142,23 +142,32 @@ export async function GET(request: NextRequest) {
                         (Array.isArray(shift.events) && shift.events[0]?.venues?.name) ||
                         '会場未設定'
       
-      // タイムゾーン変換（UTC → JST）
-      const startDate = new Date(shift.start_ts)
-      const endDate = new Date(shift.end_ts)
-      
+      // タイムスタンプから時刻部分を抽出（シフトページと同じ方式）
+      const formatTime = (dateStr: string) => {
+        if (!dateStr) return '-';
+
+        // timestampの場合、時刻部分を抽出してそのまま表示
+        // "2024-01-01T13:00:00+00:00" → "13:00"
+        const timeMatch = dateStr.match(/T(\d{2}):(\d{2})/);
+        if (timeMatch) {
+          return `${timeMatch[1]}:${timeMatch[2]}`;
+        }
+
+        // フォールバック
+        const date = new Date(dateStr);
+        return date.toLocaleTimeString('ja-JP', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+          timeZone: 'Asia/Tokyo'
+        });
+      };
+
       return {
         id: shift.id,
         name: shift.name || '照明・リギング作業',
-        start_ts: startDate.toLocaleTimeString('ja-JP', { 
-          hour: '2-digit', 
-          minute: '2-digit',
-          timeZone: 'Asia/Tokyo'  // 明示的に日本時間を指定
-        }),
-        end_ts: endDate.toLocaleTimeString('ja-JP', { 
-          hour: '2-digit', 
-          minute: '2-digit',
-          timeZone: 'Asia/Tokyo'  // 明示的に日本時間を指定
-        }),
+        start_ts: formatTime(shift.start_ts),
+        end_ts: formatTime(shift.end_ts),
         required: shift.required,
         venue_name: venueName,
         assignments: shift.assignments?.map((a: any) => ({
