@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createSupabaseBrowser } from '@/utils/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 
 type Shift = {
   id: string;
@@ -40,7 +40,7 @@ export default function ShiftsPage() {
     required: '1'
   });
 
-  const supabase = createSupabaseBrowser();
+  const supabase = createClient();
 
   useEffect(() => {
     fetchData();

@@ -107,8 +107,8 @@ async function updateSlackMessage(responseUrl: string, text: string) {
   })
 }
 
-// Slack通知送信用のヘルパー関数
-export async function sendSlackNotification(
+// Slack通知送信用のヘルパー関数（内部使用のみ）
+async function sendSlackNotification(
   channel: string,
   text: string,
   blocks?: any[]

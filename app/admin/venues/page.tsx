@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createSupabaseBrowser } from '@/utils/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 
 type Venue = {
   id: string;
@@ -25,7 +25,7 @@ export default function VenuesPage() {
     capacity: ''
   });
 
-  const supabase = createSupabaseBrowser();
+  const supabase = createClient();
 
   useEffect(() => {
     fetchVenues();

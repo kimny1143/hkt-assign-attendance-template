@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createSupabaseBrowser } from '@/utils/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 
 type Event = {
   id: string;
@@ -33,7 +33,7 @@ export default function EventsPage() {
     notes: ''
   });
 
-  const supabase = createSupabaseBrowser();
+  const supabase = createClient();
 
   useEffect(() => {
     fetchData();
