@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import QRCode from 'react-qr-code';
 
 type Equipment = {
   id: string;
@@ -24,6 +25,8 @@ export default function EquipmentPage() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [selectedQR, setSelectedQR] = useState<{ code: string; name: string } | null>(null);
   const [formData, setFormData] = useState({
     venue_id: '',
     name: '',
@@ -304,24 +307,140 @@ export default function EquipmentPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <button
-                    onClick={() => handleEdit(item)}
-                    className="text-blue-600 hover:text-blue-900 mr-2"
-                  >
-                    編集
-                  </button>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    削除
-                  </button>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => {
+                        setSelectedQR({ code: item.qr_code, name: item.name });
+                        setShowQRModal(true);
+                      }}
+                      className="p-1.5 text-green-600 hover:bg-green-50 rounded"
+                      title="QRコード表示"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h2m-6 0h2" />
+                        <rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2" fill="none" />
+                        <rect x="14" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2" fill="none" />
+                        <rect x="3" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2" fill="none" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleEdit(item)}
+                      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                      title="編集"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleDelete(item.id)}
+                      className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                      title="削除"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* QRコードモーダル */}
+      {showQRModal && selectedQR && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold">{selectedQR.name}</h3>
+              <button
+                onClick={() => setShowQRModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="bg-white p-4 flex justify-center">
+              <QRCode
+                size={256}
+                value={selectedQR.code}
+                level="H"
+                style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+              />
+            </div>
+
+            <div className="mt-4 p-2 bg-gray-100 rounded text-center">
+              <code className="text-sm font-mono">{selectedQR.code}</code>
+            </div>
+
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => {
+                  const printWindow = window.open('', '_blank');
+                  if (printWindow) {
+                    printWindow.document.write(`
+                      <html>
+                        <head>
+                          <title>${selectedQR.name} - QRコード</title>
+                          <style>
+                            body {
+                              display: flex;
+                              flex-direction: column;
+                              align-items: center;
+                              justify-content: center;
+                              height: 100vh;
+                              margin: 0;
+                              font-family: system-ui, -apple-system, sans-serif;
+                            }
+                            h2 { margin-bottom: 20px; }
+                            .code {
+                              margin-top: 20px;
+                              padding: 10px;
+                              background: #f3f4f6;
+                              border-radius: 4px;
+                              font-family: monospace;
+                            }
+                          </style>
+                        </head>
+                        <body>
+                          <h2>${selectedQR.name}</h2>
+                          <div id="qr"></div>
+                          <div class="code">${selectedQR.code}</div>
+                          <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+                          <script>
+                            const qr = qrcode(0, 'H');
+                            qr.addData('${selectedQR.code}');
+                            qr.make();
+                            document.getElementById('qr').innerHTML = qr.createImgTag(8);
+                          </script>
+                        </body>
+                      </html>
+                    `);
+                    printWindow.document.close();
+                    setTimeout(() => {
+                      printWindow.print();
+                    }, 500);
+                  }
+                }}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                印刷
+              </button>
+              <button
+                onClick={() => setShowQRModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
