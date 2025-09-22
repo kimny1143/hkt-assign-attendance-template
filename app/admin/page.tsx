@@ -127,6 +127,17 @@ export default function AdminPage() {
               アサイン画面へ
             </button>
           </div>
+
+          {/* 勤怠管理 */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-bold mb-4">⏱️ 勤怠管理</h2>
+            <p className="text-gray-600 mb-4">打刻状況の確認・管理</p>
+            <button
+              onClick={() => router.push('/admin/attendance')}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+              勤怠管理へ
+            </button>
+          </div>
         </div>
 
         {/* ステータス */}

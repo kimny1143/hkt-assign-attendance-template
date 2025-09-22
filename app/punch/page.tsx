@@ -338,6 +338,8 @@ export default function PunchPage() {
               📝 テスト用QRコード
             </summary>
             <div className="mt-2 text-xs space-y-1 bg-gray-50 p-3 rounded">
+              <div className="font-semibold text-gray-700">東京テスト会場2:</div>
+              <div>KIMNY-OTHERS-001 (kimny自宅テスト)</div>
               <div className="font-semibold text-gray-700">東京テスト会場:</div>
               <div>HACHIOJI-LIGHT-001 (JR八王子駅テスト)</div>
               <div className="mt-2 font-semibold text-gray-700">福岡会場:</div>

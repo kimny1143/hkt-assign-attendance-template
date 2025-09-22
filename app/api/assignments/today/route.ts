@@ -3,7 +3,8 @@ import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 
 export async function GET(req: NextRequest) {
-  const cookieStore = cookies()
+  try {
+    const cookieStore = cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -25,6 +26,7 @@ export async function GET(req: NextRequest) {
   }
 
   // スタッフ情報取得
+  console.log('Fetching staff for user_id:', user.id)
   const { data: staff, error: staffError } = await supabase
     .from('staff')
     .select('id')
@@ -32,26 +34,50 @@ export async function GET(req: NextRequest) {
     .single()
 
   if (staffError || !staff) {
-    return NextResponse.json({ error: 'Staff not found' }, { status: 404 })
+    console.error('Staff not found:', staffError)
+    return NextResponse.json({ error: 'Staff not found', details: staffError?.message }, { status: 404 })
   }
+  console.log('Found staff:', staff)
 
   // 本日のアサインメント取得
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]
 
+  // まず本日のシフトを取得
+  console.log('Fetching today shifts for date:', todayStr)
+  const { data: todayShifts, error: shiftError } = await supabase
+    .from('shifts')
+    .select('id')
+    .gte('start_ts', `${todayStr}T00:00:00`)
+    .lte('start_ts', `${todayStr}T23:59:59`)
+
+  if (shiftError) {
+    console.error('Shift fetch error:', shiftError)
+    return NextResponse.json({ error: shiftError.message }, { status: 500 })
+  }
+  console.log('Found shifts:', todayShifts)
+
+  const shiftIds = todayShifts?.map(s => s.id) || []
+
+  if (shiftIds.length === 0) {
+    return NextResponse.json({ assignments: [] })
+  }
+
+  // アサインメント取得
+  console.log('Fetching assignments for staff:', staff.id, 'shifts:', shiftIds)
   const { data: assignments, error } = await supabase
     .from('assignments')
     .select(`
       id,
-      confirmed,
-      shifts (
+      status,
+      shifts!inner (
         id,
         start_ts,
         end_ts,
-        events (
+        events!inner (
           id,
           name,
-          venues (
+          venues!inner (
             id,
             name,
             address
@@ -60,12 +86,21 @@ export async function GET(req: NextRequest) {
       )
     `)
     .eq('staff_id', staff.id)
-    .gte('shifts.start_ts', `${todayStr}T00:00:00`)
-    .lte('shifts.start_ts', `${todayStr}T23:59:59`)
+    .in('shift_id', shiftIds)
 
   if (error) {
+    console.error('Assignment fetch error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+  console.log('Found assignments:', assignments)
 
   return NextResponse.json({ assignments: assignments || [] })
+  } catch (error: any) {
+    console.error('Error in /api/assignments/today:', error)
+    return NextResponse.json({
+      error: 'Internal server error',
+      details: error?.message || 'Unknown error',
+      stack: error?.stack
+    }, { status: 500 })
+  }
 }
