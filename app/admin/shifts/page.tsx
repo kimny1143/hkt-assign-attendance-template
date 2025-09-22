@@ -17,6 +17,9 @@ type Shift = {
 type Event = {
   id: string;
   event_date: string;
+  open_time: string;
+  start_time: string;
+  end_time: string;
   venues: { name: string };
   notes: string | null;
 };
@@ -80,6 +83,16 @@ export default function ShiftsPage() {
 
     const selectedEvent = events.find(e => e.id === formData.event_id);
     if (!selectedEvent) return;
+
+    // イベント時間の範囲チェック
+    if (selectedEvent.open_time && formData.start_time < selectedEvent.open_time) {
+      alert(`シフト開始時間はイベント開場時間（${selectedEvent.open_time}）以降に設定してください`);
+      return;
+    }
+    if (selectedEvent.end_time && formData.end_time > selectedEvent.end_time) {
+      alert(`シフト終了時間はイベント終了時間（${selectedEvent.end_time}）以前に設定してください`);
+      return;
+    }
 
     const shiftData = {
       event_id: formData.event_id,
@@ -181,14 +194,31 @@ export default function ShiftsPage() {
             <label className="block text-sm font-medium mb-1">イベント</label>
             <select
               value={formData.event_id}
-              onChange={(e) => setFormData({ ...formData, event_id: e.target.value })}
+              onChange={(e) => {
+                const selectedEvent = events.find(ev => ev.id === e.target.value);
+                if (selectedEvent) {
+                  // イベントの時間に基づいてデフォルト値を設定
+                  const openTime = selectedEvent.open_time || '12:00';
+                  const endTime = selectedEvent.end_time || '21:00';
+                  setFormData({
+                    ...formData,
+                    event_id: e.target.value,
+                    start_time: openTime,
+                    end_time: endTime
+                  });
+                } else {
+                  setFormData({ ...formData, event_id: e.target.value });
+                }
+              }}
               className="w-full px-3 py-2 border rounded-md"
               required
             >
               <option value="">選択してください</option>
               {events.map(event => (
                 <option key={event.id} value={event.id}>
-                  {event.event_date} - {event.venues?.name} {event.notes ? `(${event.notes})` : ''}
+                  {event.event_date} - {event.venues?.name}
+                  {event.open_time && event.end_time && ` (${event.open_time}〜${event.end_time})`}
+                  {event.notes ? ` ${event.notes}` : ''}
                 </option>
               ))}
             </select>
@@ -212,6 +242,12 @@ export default function ShiftsPage() {
               className="w-full px-3 py-2 border rounded-md"
               required
             />
+            {formData.event_id && (() => {
+              const event = events.find(e => e.id === formData.event_id);
+              return event?.open_time ? (
+                <p className="text-xs text-gray-500 mt-1">イベント開場: {event.open_time}</p>
+              ) : null;
+            })()}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">終了時間</label>
@@ -222,6 +258,12 @@ export default function ShiftsPage() {
               className="w-full px-3 py-2 border rounded-md"
               required
             />
+            {formData.event_id && (() => {
+              const event = events.find(e => e.id === formData.event_id);
+              return event?.end_time ? (
+                <p className="text-xs text-gray-500 mt-1">イベント終了: {event.end_time}</p>
+              ) : null;
+            })()}
           </div>
           <div className="md:col-span-2">
             <label className="block text-sm font-medium mb-1">必要人数</label>
