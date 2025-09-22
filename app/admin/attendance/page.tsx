@@ -131,9 +131,18 @@ export default function AttendancePage() {
   if (loading) return <div className="p-4">読み込み中...</div>;
 
   return (
-    <div className="p-4 max-w-7xl mx-auto">
+    <div className="container mx-auto px-4 py-8">
+      {/* パンくずリスト */}
+      <nav className="flex mb-4 text-sm">
+        <a href="/admin" className="text-blue-600 hover:text-blue-800">
+          ダッシュボード
+        </a>
+        <span className="mx-2 text-gray-500">/</span>
+        <span className="text-gray-700">勤怠管理</span>
+      </nav>
+
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">勤怠管理</h1>
+        <h1 className="text-2xl font-bold">⏱️ 勤怠管理</h1>
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">

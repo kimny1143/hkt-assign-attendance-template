@@ -152,8 +152,17 @@ export default function EquipmentPage() {
   if (loading) return <div className="p-4">読み込み中...</div>;
 
   return (
-    <div className="p-4 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">機材管理</h1>
+    <div className="container mx-auto px-4 py-8">
+      {/* パンくずリスト */}
+      <nav className="flex mb-4 text-sm">
+        <a href="/admin" className="text-blue-600 hover:text-blue-800">
+          ダッシュボード
+        </a>
+        <span className="mx-2 text-gray-500">/</span>
+        <span className="text-gray-700">機材QR管理</span>
+      </nav>
+
+      <h1 className="text-2xl font-bold mb-6">🏷️ 機材QR管理</h1>
 
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">

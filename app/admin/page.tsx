@@ -43,101 +43,79 @@ export default function AdminPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <div className="bg-black text-white p-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold">HAAS 管理画面</h1>
-            <p className="text-sm mt-1">
-              {user?.name} ({user?.role === 'admin' ? '管理者' : 'マネージャー'})
-            </p>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded transition"
-          >
-            ログアウト
-          </button>
+      <div className="bg-white border-b p-4">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-2xl font-bold">ダッシュボード</h1>
+          <p className="text-sm text-gray-600 mt-1">
+            {user?.name} ({user?.role === 'admin' ? '管理者' : 'マネージャー'})
+          </p>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {/* 会場管理 */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold mb-4">🏢 会場管理</h2>
-            <p className="text-gray-600 mb-4">会場の登録・編集・削除</p>
-            <button
-              onClick={() => router.push('/admin/venues')}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-              管理画面へ
-            </button>
-          </div>
+          <button
+            onClick={() => router.push('/admin/venues')}
+            className="bg-white rounded-lg shadow p-4 hover:shadow-lg transition-shadow text-center group">
+            <div className="text-3xl mb-2">🏢</div>
+            <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600">会場管理</h3>
+            <p className="text-xs text-gray-500 mt-1">登録・編集</p>
+          </button>
 
           {/* 機材QR管理 */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold mb-4">🏷️ 機材QR管理</h2>
-            <p className="text-gray-600 mb-4">機材QRコードの登録・管理</p>
-            <button
-              onClick={() => router.push('/admin/equipment')}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-              管理画面へ
-            </button>
-          </div>
+          <button
+            onClick={() => router.push('/admin/equipment')}
+            className="bg-white rounded-lg shadow p-4 hover:shadow-lg transition-shadow text-center group">
+            <div className="text-3xl mb-2">🏷️</div>
+            <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600">機材QR</h3>
+            <p className="text-xs text-gray-500 mt-1">QRコード管理</p>
+          </button>
 
           {/* イベント管理 */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold mb-4">📅 イベント管理</h2>
-            <p className="text-gray-600 mb-4">イベントの作成・編集</p>
-            <button
-              onClick={() => router.push('/admin/events')}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-              管理画面へ
-            </button>
-          </div>
+          <button
+            onClick={() => router.push('/admin/events')}
+            className="bg-white rounded-lg shadow p-4 hover:shadow-lg transition-shadow text-center group">
+            <div className="text-3xl mb-2">📅</div>
+            <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600">イベント</h3>
+            <p className="text-xs text-gray-500 mt-1">作成・編集</p>
+          </button>
 
           {/* シフト管理 */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold mb-4">🕐 シフト管理</h2>
-            <p className="text-gray-600 mb-4">シフトの作成・必要人数設定</p>
-            <button
-              onClick={() => router.push('/admin/shifts')}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-              管理画面へ
-            </button>
-          </div>
+          <button
+            onClick={() => router.push('/admin/shifts')}
+            className="bg-white rounded-lg shadow p-4 hover:shadow-lg transition-shadow text-center group">
+            <div className="text-3xl mb-2">🕐</div>
+            <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600">シフト</h3>
+            <p className="text-xs text-gray-500 mt-1">必要人数設定</p>
+          </button>
 
           {/* スタッフ管理 */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold mb-4">👥 スタッフ管理</h2>
-            <p className="text-gray-600 mb-4">スタッフの登録・編集・削除</p>
-            <button
-              onClick={() => router.push('/admin/staff')}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-              管理画面へ
-            </button>
-          </div>
+          <button
+            onClick={() => router.push('/admin/staff')}
+            className="bg-white rounded-lg shadow p-4 hover:shadow-lg transition-shadow text-center group">
+            <div className="text-3xl mb-2">👥</div>
+            <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600">スタッフ</h3>
+            <p className="text-xs text-gray-500 mt-1">登録・編集</p>
+          </button>
 
           {/* アサイン管理 */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold mb-4">📋 アサイン管理</h2>
-            <p className="text-gray-600 mb-4">スタッフのシフト割り当て</p>
-            <button
-              onClick={() => router.push('/admin/assign')}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-              アサイン画面へ
-            </button>
-          </div>
+          <button
+            onClick={() => router.push('/admin/assign')}
+            className="bg-white rounded-lg shadow p-4 hover:shadow-lg transition-shadow text-center group">
+            <div className="text-3xl mb-2">📋</div>
+            <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600">アサイン</h3>
+            <p className="text-xs text-gray-500 mt-1">シフト割当</p>
+          </button>
 
           {/* 勤怠管理 */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold mb-4">⏱️ 勤怠管理</h2>
-            <p className="text-gray-600 mb-4">打刻状況の確認・管理</p>
-            <button
-              onClick={() => router.push('/admin/attendance')}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-              勤怠管理へ
-            </button>
-          </div>
+          <button
+            onClick={() => router.push('/admin/attendance')}
+            className="bg-white rounded-lg shadow p-4 hover:shadow-lg transition-shadow text-center group">
+            <div className="text-3xl mb-2">⏱️</div>
+            <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600">勤怠管理</h3>
+            <p className="text-xs text-gray-500 mt-1">打刻確認</p>
+          </button>
         </div>
 
         {/* ステータス */}

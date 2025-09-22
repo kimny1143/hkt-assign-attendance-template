@@ -119,20 +119,24 @@ export default function AssignPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <div className="bg-black text-white p-4">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl font-bold">HAAS アサイン管理</h1>
-        </div>
-      </div>
-
       <div className="max-w-7xl mx-auto p-6">
-        {/* 日付選択 */}
-        <div className="mb-6">
+        {/* パンくずリスト */}
+        <nav className="flex mb-4 text-sm">
+          <a href="/admin" className="text-blue-600 hover:text-blue-800">
+            ダッシュボード
+          </a>
+          <span className="mx-2 text-gray-500">/</span>
+          <span className="text-gray-700">アサイン管理</span>
+        </nav>
+
+        {/* ヘッダー */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">📋 アサイン管理</h1>
           <input
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-4 py-2 border rounded-lg"
+            className="px-4 py-2 border rounded-lg text-sm"
           />
         </div>
 
@@ -178,10 +182,12 @@ export default function AssignPage() {
                             </span>
                             <button
                               onClick={() => removeAssignment(assignment.id, shift.id)}
-                              className="text-red-600 hover:text-red-800 text-sm"
+                              className="text-red-600 hover:text-red-800 p-1"
                               title="削除"
                             >
-                              ✕
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
                             </button>
                           </div>
                         </div>
