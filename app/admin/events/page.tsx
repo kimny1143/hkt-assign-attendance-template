@@ -278,7 +278,7 @@ export default function EventsPage() {
                 <td className="px-4 py-3 font-medium">{formatDate(event.event_date)}</td>
                 <td className="px-4 py-3">{event.venues?.name || '-'}</td>
                 <td className="px-4 py-3 text-sm">
-                  開場 {event.open_time} / 開演 {event.start_time} / 終演 {event.end_time}
+                  開場 {event.open_time || '-'} / 開演 {event.start_time || '-'} / 終演 {event.end_time || '-'}
                 </td>
                 <td className="px-4 py-3 text-sm">{event.notes || '-'}</td>
                 <td className="px-4 py-3">
@@ -319,11 +319,11 @@ export default function EventsPage() {
                   <div className="flex items-center gap-1">
                     <Clock className="w-3 h-3 text-gray-400" />
                     <p className="text-xs text-gray-500">
-                      <span className="font-medium">開場:</span> {event.open_time}
+                      <span className="font-medium">開場:</span> {event.open_time || '-'}
                     </p>
                   </div>
                   <p className="text-xs text-gray-500 ml-4">
-                    <span className="font-medium">開演:</span> {event.start_time} | <span className="font-medium">終演:</span> {event.end_time}
+                    <span className="font-medium">開演:</span> {event.start_time || '-'} | <span className="font-medium">終演:</span> {event.end_time || '-'}
                   </p>
                   {event.notes && (
                     <p className="text-xs text-gray-500 ml-4">

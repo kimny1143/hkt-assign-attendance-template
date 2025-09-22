@@ -201,11 +201,21 @@ export default function ShiftsPage() {
                   const openTime = selectedEvent.open_time || '13:00';
                   const endTime = selectedEvent.end_time || '21:00';
 
-                  // 開場1時間前から開始、終了1時間後まで
-                  const defaultStartTime = openTime ?
-                    `${(parseInt(openTime.split(':')[0]) - 1).toString().padStart(2, '0')}:${openTime.split(':')[1]}` : '12:00';
-                  const defaultEndTime = endTime ?
-                    `${(parseInt(endTime.split(':')[0]) + 1).toString().padStart(2, '0')}:${endTime.split(':')[1]}` : '22:00';
+                  // 開場1時間前から開始、終了1時間後まで（時刻の境界を考慮）
+                  let defaultStartTime = '12:00';
+                  let defaultEndTime = '22:00';
+
+                  if (openTime) {
+                    const [openHour, openMin] = openTime.split(':');
+                    const startHour = Math.max(0, parseInt(openHour) - 1); // 0時未満にならないように
+                    defaultStartTime = `${startHour.toString().padStart(2, '0')}:${openMin}`;
+                  }
+
+                  if (endTime) {
+                    const [endHour, endMin] = endTime.split(':');
+                    const finishHour = Math.min(23, parseInt(endHour) + 1); // 23時を超えないように
+                    defaultEndTime = `${finishHour.toString().padStart(2, '0')}:${endMin}`;
+                  }
 
                   setFormData({
                     ...formData,
