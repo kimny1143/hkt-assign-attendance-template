@@ -167,14 +167,14 @@ export default function ShiftsPage() {
   const formatTime = (dateStr: string) => {
     if (!dateStr) return '-';
 
-    // timestampをそのまま使うとUTCとして解釈される可能性があるため
-    // 日付部分を除いて時刻部分のみ抽出
-    const timeMatch = dateStr.match(/(\d{2}):(\d{2})/);
+    // timestampの場合、時刻部分を抽出してそのまま表示
+    // "2024-01-01T13:00:00+00:00" → "13:00"
+    const timeMatch = dateStr.match(/T(\d{2}):(\d{2})/);
     if (timeMatch) {
       return `${timeMatch[1]}:${timeMatch[2]}`;
     }
 
-    // フォールバック: Date型として処理
+    // フォールバック
     const date = new Date(dateStr);
     return date.toLocaleTimeString('ja-JP', {
       hour: '2-digit',
