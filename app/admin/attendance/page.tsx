@@ -95,7 +95,13 @@ export default function AttendancePage() {
       console.error('Error fetching attendances:', error);
     } else {
       console.log('Fetched attendances:', data);
-      setAttendances(data || []);
+      // データの型を修正
+      const formattedData = (data || []).map((item: any) => ({
+        ...item,
+        staff: item.staff || { name: '', code: null },
+        shifts: item.shifts || { name: '', start_ts: '', end_ts: '', events: null }
+      })) as Attendance[];
+      setAttendances(formattedData);
     }
     setLoading(false);
   };
