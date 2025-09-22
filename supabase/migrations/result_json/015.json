@@ -1,0 +1,30 @@
+[
+    {
+      "tablename": "assignments",
+      "rls_status": "✅ RLS Enabled"
+    },
+    {
+      "tablename": "attendances",
+      "rls_status": "✅ RLS Enabled"
+    },
+    {
+      "tablename": "events",
+      "rls_status": "✅ RLS Enabled"
+    },
+    {
+      "tablename": "shifts",
+      "rls_status": "✅ RLS Enabled"
+    },
+    {
+      "tablename": "staff",
+      "rls_status": "✅ RLS Enabled"
+    },
+    {
+      "tablename": "user_roles",
+      "rls_status": "✅ RLS Enabled"
+    },
+    {
+      "tablename": "venues",
+      "rls_status": "✅ RLS Enabled"
+    }
+  ]

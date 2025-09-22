@@ -18,7 +18,7 @@ echo "2. スマホのブラウザで以下のURLにアクセス:"
 echo "   http://${LOCAL_IP}:3000"
 echo ""
 echo "3. ログイン情報:"
-echo "   管理者: admin@haas.test / admin123"
+echo "   管理者: admin@haas.test / password123"
 echo "   スタッフ: staff1@haas.test / password123"
 echo ""
 

@@ -27,7 +27,7 @@ export default function DebugPage() {
           Check staff1@haas.test
         </button>
         <button
-          onClick={() => checkUser('admin@haas.test', 'admin123')}
+          onClick={() => checkUser('admin@haas.test', 'password123')}
           className="bg-blue-500 text-white px-4 py-2 rounded ml-2"
         >
           Check admin@haas.test

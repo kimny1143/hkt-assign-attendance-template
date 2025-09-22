@@ -109,21 +109,21 @@ export default function LoginPage() {
             <div className="space-y-2">
               <button
                 type="button"
-                onClick={() => quickLogin('admin@haas.test', 'admin123')}
+                onClick={() => quickLogin('admin@haas.test', 'password123')}
                 className="w-full text-left px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm"
               >
                 👑 管理者 (admin@haas.test)
               </button>
               <button
                 type="button"
-                onClick={() => quickLogin('manager@haas.test', 'manager123')}
+                onClick={() => quickLogin('manager@haas.test', 'password123')}
                 className="w-full text-left px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm"
               >
                 📊 マネージャー (manager@haas.test)
               </button>
               <button
                 type="button"
-                onClick={() => quickLogin('staff1@haas.test', 'staff123')}
+                onClick={() => quickLogin('staff1@haas.test', 'password123')}
                 className="w-full text-left px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm"
               >
                 👷 スタッフ (staff1@haas.test)
