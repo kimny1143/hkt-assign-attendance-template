@@ -32,7 +32,7 @@ export default function ShiftsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // useJSTDateフックから関数を取得
-  const { formatTime, parseToJST } = useJSTDate();
+  const { formatTime, parseToJST, toSupabaseTimestamp } = useJSTDate();
   const [formData, setFormData] = useState({
     event_id: '',
     name: '',
@@ -98,11 +98,12 @@ export default function ShiftsPage() {
       return;
     }
 
+    // JSTの時刻をUTCに変換して保存
     const shiftData = {
       event_id: formData.event_id,
       name: formData.name || `${selectedEvent.event_date} シフト`,
-      start_at: `${selectedEvent.event_date}T${formData.start_time}:00`,
-      end_at: `${selectedEvent.event_date}T${formData.end_time}:00`,
+      start_at: toSupabaseTimestamp(`${selectedEvent.event_date}T${formData.start_time}:00`),
+      end_at: toSupabaseTimestamp(`${selectedEvent.event_date}T${formData.end_time}:00`),
       required: parseInt(formData.required)
     };
 
