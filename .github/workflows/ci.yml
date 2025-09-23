@@ -267,8 +267,13 @@ jobs:
       - name: Build application
         run: |
           echo "Starting build in directory: $(pwd)"
+          echo "Files before build:"
+          ls -la | head -20
+          echo "Running: npm run build"
           npm run build || (echo "Build failed with exit code $?"; exit 1)
-          echo "Build completed"
+          echo "Build completed successfully"
+          echo "Files after build:"
+          ls -la | head -20
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-key
