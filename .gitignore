@@ -31,8 +31,9 @@ yarn-error.log*
 .env.production
 
 # vercel
-.vercel
-.vercel/
+# .vercel ディレクトリはプロジェクトIDのためにコミット
+# .vercel
+# .vercel/
 
 # typescript
 *.tsbuildinfo
