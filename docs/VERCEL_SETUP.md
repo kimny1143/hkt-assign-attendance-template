@@ -1,5 +1,9 @@
 # Vercel デプロイ設定
 
+## 自動デプロイ状態
+- 最終確認: 2024-09-23 23:49 JST
+- 状態: GitHub連携による自動デプロイが復活
+
 ## GitHub Secretsの設定
 
 GitHubリポジトリの Settings → Secrets and variables → Actions に以下の値を追加してください：
