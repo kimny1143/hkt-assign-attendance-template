@@ -170,6 +170,13 @@ jobs:
           name: build-files
           path: .
 
+      - name: Extract build artifacts
+        run: |
+          echo "Extracting build artifacts..."
+          tar -xzf build-artifact.tar.gz
+          echo "Extraction complete. Contents:"
+          ls -la .next | head -10
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps ${{ matrix.browser }}
 
@@ -322,11 +329,23 @@ jobs:
             find . -type d -name ".next" 2>/dev/null || echo "No .next found anywhere"
           fi
 
+      - name: Prepare artifacts for upload
+        run: |
+          echo "=== Preparing artifacts for upload ==="
+          if [ ! -d ".next" ]; then
+            echo "❌ ERROR: .next directory does not exist!"
+            exit 1
+          fi
+          echo "✅ .next directory exists"
+          echo "Creating tar archive..."
+          tar -czf build-artifact.tar.gz .next
+          echo "Archive created: $(ls -lh build-artifact.tar.gz)"
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: build-files
-          path: .next
+          path: build-artifact.tar.gz
           retention-days: 7
           if-no-files-found: error
 
