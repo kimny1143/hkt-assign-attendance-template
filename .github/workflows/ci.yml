@@ -265,19 +265,31 @@ jobs:
         run: npm ci
 
       - name: Build application
-        run: npm run build
+        run: |
+          echo "Starting build in directory: $(pwd)"
+          npm run build || (echo "Build failed with exit code $?"; exit 1)
+          echo "Build completed"
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-key
 
       - name: Verify build output
         run: |
-          echo "Checking build output..."
-          ls -la .next/ || echo "No .next directory found after build"
-          echo "Build directory size:"
-          du -sh .next/ || echo "Cannot calculate .next size"
-          echo "Key build files:"
-          find .next -name "*.js" -o -name "*.html" -o -name "server.js" | head -10 || echo "No build files found"
+          echo "Checking current directory..."
+          pwd
+          echo "Listing all directories..."
+          ls -la
+          echo "Checking for .next directory..."
+          if [ -d ".next" ]; then
+            echo ".next directory exists!"
+            ls -la .next/ | head -10
+            echo "Build directory size:"
+            du -sh .next/
+          else
+            echo "❌ .next directory NOT found after build"
+            echo "Checking if build created output elsewhere..."
+            find . -type d -name ".next" 2>/dev/null || echo "No .next found anywhere"
+          fi
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
