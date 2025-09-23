@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { createClient } from '@supabase/supabase-js'
 
-const CHANNEL_SECRET = process.env.LINE_CHANNEL_SECRET!
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
-const supabase = createClient(SUPABASE_URL, SERVICE_KEY)
+const CHANNEL_SECRET = process.env.LINE_CHANNEL_SECRET || ''
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+
+// Only create supabase client if credentials are available
+const supabase = SUPABASE_URL && SERVICE_KEY
+  ? createClient(SUPABASE_URL, SERVICE_KEY)
+  : null
 
 function verifySignature(body: string, signature: string) {
   const hmac = crypto.createHmac('sha256', CHANNEL_SECRET).update(body).digest('base64')
@@ -13,6 +17,12 @@ function verifySignature(body: string, signature: string) {
 }
 
 export async function POST(req: NextRequest) {
+  // Check if environment is properly configured
+  if (!supabase || !CHANNEL_SECRET) {
+    console.error('LINE webhook not configured properly')
+    return NextResponse.json({ error: 'Service not configured' }, { status: 503 })
+  }
+
   const body = await req.text()
   const sig = req.headers.get('x-line-signature') || ''
   if (!verifySignature(body, sig)) return NextResponse.json({ error: 'bad signature' }, { status: 400 })
