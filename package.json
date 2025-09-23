@@ -15,6 +15,7 @@
     "test:integration": "jest --testPathPattern=__tests__/integration",
     "test:integration:watch": "jest --testPathPattern=__tests__/integration --watch",
     "test:e2e": "playwright test",
+    "test:e2e:ci": "playwright test --config=playwright.config.ci.ts",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
     "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",

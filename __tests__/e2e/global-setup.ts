@@ -1,21 +1,35 @@
 import { chromium, FullConfig } from '@playwright/test'
-import { mockSupabaseClient } from '../utils/supabase-mock'
+import { waitForAppToBeReady, waitForApiEndpoint } from '../utils/health-check'
 
 async function globalSetup(config: FullConfig) {
   console.log('🚀 Starting global E2E test setup...')
 
-  // Launch browser for setup
-  const browser = await chromium.launch()
-  const page = await browser.newPage()
-
   try {
-    // Navigate to the application
+    // Get the base URL
     const baseURL = config.projects[0].use.baseURL || 'http://localhost:3000'
     console.log(`📍 Testing against: ${baseURL}`)
 
     // Wait for the application to be ready
-    await page.goto(baseURL)
+    const isAppReady = await waitForAppToBeReady(baseURL, 60, 2000)
+    if (!isAppReady) {
+      throw new Error('Application failed to become ready')
+    }
+
+    // Check API endpoints
+    const isApiReady = await waitForApiEndpoint(`${baseURL}/api/health`, 30, 1000)
+    if (!isApiReady) {
+      console.warn('⚠️ API health check endpoint not responding, continuing anyway...')
+    }
+
+    // Launch browser for additional setup
+    const browser = await chromium.launch()
+    const page = await browser.newPage()
+
+    // Navigate to the application to verify it loads
+    await page.goto(baseURL, { waitUntil: 'networkidle' })
     await page.waitForSelector('body', { timeout: 30000 })
+
+    await browser.close()
 
     // Setup test data in Supabase (if using real backend)
     if (process.env.E2E_USE_REAL_BACKEND === 'true') {
@@ -26,8 +40,6 @@ async function globalSetup(config: FullConfig) {
   } catch (error) {
     console.error('❌ Global setup failed:', error)
     throw error
-  } finally {
-    await browser.close()
   }
 }
 
