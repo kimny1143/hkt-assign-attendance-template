@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Clock, Calendar, Users, Edit, Trash2 } from 'lucide-react';
+import { useJSTDate } from '@/hooks/useJSTDate';
 
 type Shift = {
   id: string;
   event_id: string;
   name: string;
-  start_ts: string;
-  end_ts: string;
+  start_at: string;
+  end_at: string;
   required: number;
   created_at: string;
 };
@@ -29,6 +30,9 @@ export default function ShiftsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // useJSTDateフックから関数を取得
+  const { formatTime } = useJSTDate();
   const [formData, setFormData] = useState({
     event_id: '',
     name: '',
@@ -55,7 +59,7 @@ export default function ShiftsPage() {
             venues(name)
           )
         `)
-        .order('start_ts', { ascending: false }),
+        .order('start_at', { ascending: false }),
       supabase
         .from('events')
         .select('*, venues(name)')
@@ -97,8 +101,8 @@ export default function ShiftsPage() {
     const shiftData = {
       event_id: formData.event_id,
       name: formData.name || `${selectedEvent.event_date} シフト`,
-      start_ts: `${selectedEvent.event_date}T${formData.start_time}:00`,
-      end_ts: `${selectedEvent.event_date}T${formData.end_time}:00`,
+      start_at: `${selectedEvent.event_date}T${formData.start_time}:00`,
+      end_at: `${selectedEvent.event_date}T${formData.end_time}:00`,
       required: parseInt(formData.required)
     };
 
@@ -137,8 +141,8 @@ export default function ShiftsPage() {
 
   const handleEdit = (shift: any) => {
     setEditingId(shift.id);
-    const startTime = new Date(shift.start_ts).toTimeString().slice(0, 5);
-    const endTime = new Date(shift.end_ts).toTimeString().slice(0, 5);
+    const startTime = new Date(shift.start_at).toTimeString().slice(0, 5);
+    const endTime = new Date(shift.end_at).toTimeString().slice(0, 5);
 
     setFormData({
       event_id: shift.event_id,
@@ -164,25 +168,7 @@ export default function ShiftsPage() {
     }
   };
 
-  const formatTime = (dateStr: string) => {
-    if (!dateStr) return '-';
-
-    // timestampの場合、時刻部分を抽出してそのまま表示
-    // "2024-01-01T13:00:00+00:00" → "13:00"
-    const timeMatch = dateStr.match(/T(\d{2}):(\d{2})/);
-    if (timeMatch) {
-      return `${timeMatch[1]}:${timeMatch[2]}`;
-    }
-
-    // フォールバック
-    const date = new Date(dateStr);
-    return date.toLocaleTimeString('ja-JP', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: 'Asia/Tokyo'
-    });
-  };
+  // formatTimeはuseJSTDateフックから取得
 
   if (loading) return <div className="p-4">読み込み中...</div>;
 
@@ -360,8 +346,8 @@ export default function ShiftsPage() {
                 <td className="px-4 py-3 text-sm">
                   {shift.name || '-'}
                 </td>
-                <td className="px-4 py-3 text-sm">{formatTime(shift.start_ts)}</td>
-                <td className="px-4 py-3 text-sm">{formatTime(shift.end_ts)}</td>
+                <td className="px-4 py-3 text-sm">{formatTime(shift.start_at)}</td>
+                <td className="px-4 py-3 text-sm">{formatTime(shift.end_at)}</td>
                 <td className="px-4 py-3 text-center">{shift.required}人</td>
                 <td className="px-4 py-3">
                   <button
@@ -404,11 +390,11 @@ export default function ShiftsPage() {
                   <div className="flex items-center gap-1">
                     <Clock className="w-3 h-3 text-gray-400" />
                     <p className="text-xs text-gray-500">
-                      <span className="font-medium">開始:</span> {formatTime(shift.start_ts)}
+                      <span className="font-medium">開始:</span> {formatTime(shift.start_at)}
                     </p>
                   </div>
                   <p className="text-xs text-gray-500 ml-4">
-                    <span className="font-medium">終了:</span> {formatTime(shift.end_ts)}
+                    <span className="font-medium">終了:</span> {formatTime(shift.end_at)}
                   </p>
                   <div className="flex items-center gap-1">
                     <Users className="w-3 h-3 text-gray-400" />

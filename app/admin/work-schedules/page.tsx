@@ -7,8 +7,8 @@ import { Clock, Users, Calendar } from 'lucide-react';
 type WorkSchedule = {
   id: string;
   event_id: string;
-  start_ts: string;
-  end_ts: string;
+  start_at: string;
+  end_at: string;
   required: number;
   created_at: string;
   name?: string;
@@ -59,7 +59,7 @@ export default function WorkSchedulesPage() {
             venues(name)
           )
         `)
-        .order('start_ts', { ascending: false }),
+        .order('start_at', { ascending: false }),
       supabase
         .from('events')
         .select('*, venues(name)')
@@ -108,8 +108,8 @@ export default function WorkSchedulesPage() {
 
     const scheduleData = {
       event_id: formData.event_id,
-      start_ts: `${selectedEvent.event_date}T${formData.start_time}:00+09:00`,  // JST指定
-      end_ts: `${selectedEvent.event_date}T${formData.end_time}:00+09:00`,      // JST指定
+      start_at: `${selectedEvent.event_date}T${formData.start_time}:00+09:00`,  // JST指定
+      end_at: `${selectedEvent.event_date}T${formData.end_time}:00+09:00`,      // JST指定
       required: requiredNum,
       skill_id: 1,  // 暫定的にスキルID1を設定（後で削除予定）
       name: `${selectedEvent.venues?.name} 業務枠`
@@ -150,8 +150,8 @@ export default function WorkSchedulesPage() {
   const handleEdit = (schedule: any) => {
     setEditingId(schedule.id);
     // タイムゾーンを考慮した時刻取得
-    const startDate = new Date(schedule.start_ts);
-    const endDate = new Date(schedule.end_ts);
+    const startDate = new Date(schedule.start_at);
+    const endDate = new Date(schedule.end_at);
 
     // ローカル時刻として取得
     const startTime = `${String(startDate.getHours()).padStart(2, '0')}:${String(startDate.getMinutes()).padStart(2, '0')}`;
@@ -357,10 +357,10 @@ export default function WorkSchedulesPage() {
                     <div className="text-xs text-gray-400">{schedule.events.notes}</div>
                   )}
                 </td>
-                <td className="px-4 py-3 text-sm">{formatDateTime(schedule.start_ts)}</td>
-                <td className="px-4 py-3 text-sm">{formatDateTime(schedule.end_ts)}</td>
+                <td className="px-4 py-3 text-sm">{formatDateTime(schedule.start_at)}</td>
+                <td className="px-4 py-3 text-sm">{formatDateTime(schedule.end_at)}</td>
                 <td className="px-4 py-3 text-sm">
-                  {calculateDuration(schedule.start_ts, schedule.end_ts)}
+                  {calculateDuration(schedule.start_at, schedule.end_at)}
                 </td>
                 <td className="px-4 py-3">
                   <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">

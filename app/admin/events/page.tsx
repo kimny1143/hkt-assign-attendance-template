@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Calendar, Clock, MapPin, Edit, Trash2 } from 'lucide-react';
+import { useJSTDate } from '@/hooks/useJSTDate';
 
 type Event = {
   id: string;
@@ -25,6 +26,9 @@ export default function EventsPage() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // useJSTDateフックから関数を取得
+  const { formatTime, formatDate } = useJSTDate();
   const [formData, setFormData] = useState({
     venue_id: '',
     event_date: '',
@@ -140,33 +144,8 @@ export default function EventsPage() {
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-  };
-
-  const formatTime = (timeStr: string | null) => {
-    if (!timeStr) return '-';
-
-    // time型のデータをJSTに変換
-    // Supabaseから来る時刻は "HH:MM:SS" または Date形式の可能性がある
-    if (timeStr.includes(':') && timeStr.length <= 8) {
-      // "HH:MM:SS" 形式の場合はそのまま返す
-      return timeStr.substring(0, 5);
-    }
-
-    // Date形式の場合は日本時間で表示
-    const date = new Date(timeStr);
-    return date.toLocaleTimeString('ja-JP', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: 'Asia/Tokyo'
-    });
+  const formatEventDate = (dateStr: string) => {
+    return formatDate(dateStr);
   };
 
   if (loading) return <div className="p-4">読み込み中...</div>;
@@ -295,7 +274,7 @@ export default function EventsPage() {
           <tbody className="divide-y divide-gray-200">
             {events.map((event: any) => (
               <tr key={event.id}>
-                <td className="px-4 py-3 font-medium">{formatDate(event.event_date)}</td>
+                <td className="px-4 py-3 font-medium">{formatEventDate(event.event_date)}</td>
                 <td className="px-4 py-3">{event.venues?.name || '-'}</td>
                 <td className="px-4 py-3 text-sm">
                   開場 {formatTime(event.open_time)} / 開演 {formatTime(event.start_time)} / 終演 {formatTime(event.end_time)}
@@ -329,7 +308,7 @@ export default function EventsPage() {
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
                   <Calendar className="w-4 h-4 text-blue-600" />
-                  <h3 className="font-semibold text-lg">{formatDate(event.event_date)}</h3>
+                  <h3 className="font-semibold text-lg">{formatEventDate(event.event_date)}</h3>
                 </div>
                 <div className="flex items-center gap-1 mb-2">
                   <MapPin className="w-4 h-4 text-gray-400" />

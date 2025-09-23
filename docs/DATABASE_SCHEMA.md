@@ -89,10 +89,10 @@ erDiagram
     shifts {
         uuid id PK
         uuid event_id FK
-        string skill_type "Required skill"
+        string name "Shift name"
         timestamp start_ts "Start timestamp"
         timestamp end_ts "End timestamp"
-        integer required_count "Staff needed"
+        integer required "Staff needed"
         timestamp created_at
     }
 
@@ -211,20 +211,20 @@ CREATE INDEX idx_events_venue_id ON events(venue_id);
 ```
 
 ### shifts
-特定のスキルを持つスタッフが必要なワークシフト
+イベントのワークシフト（必要人数を指定）
 
 ```sql
 CREATE TABLE public.shifts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     event_id UUID NOT NULL REFERENCES events(id),
-    skill_type VARCHAR(50) NOT NULL,  -- 'PA', 'Sound', 'Lighting', 'Backstage'
+    name VARCHAR(100),  -- シフト名（任意）
     start_ts TIMESTAMP WITH TIME ZONE NOT NULL,
     end_ts TIMESTAMP WITH TIME ZONE NOT NULL,
-    required_count INTEGER NOT NULL DEFAULT 1,
+    required INTEGER NOT NULL DEFAULT 2,  -- 必要人数
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
 
     CHECK (end_ts > start_ts),
-    CHECK (required_count > 0)
+    CHECK (required > 0)
 );
 
 -- Indexes
@@ -435,7 +435,8 @@ SELECT
     a.id as assignment_id,
     s.name as staff_name,
     s.phone as staff_phone,
-    sh.skill_type,
+    sh.name as shift_name,
+    sh.required,
     sh.start_ts,
     sh.end_ts,
     e.name as event_name,

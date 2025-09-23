@@ -58,8 +58,8 @@ export async function GET(
           status,
           shifts (
             id,
-            start_ts,
-            end_ts,
+            start_at,
+            end_at,
             events (
               event_date,
               venues (

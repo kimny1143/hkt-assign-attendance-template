@@ -80,9 +80,9 @@ export default defineConfig({
     timeout: 120 * 1000,
   },
 
-  /* Global setup and teardown */
-  globalSetup: require.resolve('./__tests__/e2e/global-setup.ts'),
-  globalTeardown: require.resolve('./__tests__/e2e/global-teardown.ts'),
+  /* Global setup and teardown - commented out for initial testing */
+  // globalSetup: require.resolve('./__tests__/e2e/global-setup.ts'),
+  // globalTeardown: require.resolve('./__tests__/e2e/global-teardown.ts'),
 
   /* Test timeout */
   timeout: 30 * 1000,

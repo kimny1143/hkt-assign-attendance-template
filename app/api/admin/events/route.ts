@@ -42,8 +42,8 @@ export async function GET(request: NextRequest) {
         shifts (
           id,
           skill_id,
-          start_ts,
-          end_ts,
+          start_at,
+          end_at,
           required,
           skills (
             code,

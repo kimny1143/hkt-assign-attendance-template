@@ -61,8 +61,8 @@ export class StaffRepository {
         ),
         attendances (
           id,
-          check_in_ts,
-          check_out_ts,
+          checkin_at,
+          checkout_at,
           status
         )
       `)

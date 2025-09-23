@@ -403,10 +403,10 @@ List all shifts with assignment status
         "id": "uuid",
         "name": "Event Name"
       },
-      "skill_type": "PA",
+      "name": "昼シフト",
       "start_ts": "2025-09-22T17:00:00Z",
       "end_ts": "2025-09-22T22:00:00Z",
-      "required_count": 2,
+      "required": 2,
       "assigned_count": 1,
       "assignments": [...]
     }
@@ -448,7 +448,7 @@ Create shift assignments
 
 **Business Rules:**
 - Cannot exceed required_count for shift
-- Staff must have required skill
+- Staff availability and skill coverage check
 - No double-booking allowed
 - Labor law compliance check
 
@@ -515,7 +515,8 @@ Get current user's schedule
           "id": "uuid",
           "start_ts": "2025-09-22T17:00:00Z",
           "end_ts": "2025-09-22T22:00:00Z",
-          "skill_type": "PA"
+          "name": "昼シフト",
+          "required": 2
         },
         "event": {
           "name": "Regular Performance",

@@ -50,8 +50,8 @@ export async function GET(req: NextRequest) {
   const { data: todayShifts, error: shiftError } = await supabase
     .from('shifts')
     .select('id')
-    .gte('start_ts', `${todayStr}T00:00:00`)
-    .lte('start_ts', `${todayStr}T23:59:59`)
+    .gte('start_at', `${todayStr}T00:00:00`)
+    .lte('start_at', `${todayStr}T23:59:59`)
 
   if (shiftError) {
     console.error('Shift fetch error:', shiftError)
@@ -74,8 +74,8 @@ export async function GET(req: NextRequest) {
       status,
       shifts!inner (
         id,
-        start_ts,
-        end_ts,
+        start_at,
+        end_at,
         events!inner (
           id,
           name,

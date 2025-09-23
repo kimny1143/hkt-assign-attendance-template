@@ -30,8 +30,8 @@ interface StaffDetail {
   }[];
   attendances?: {
     id: string;
-    check_in_ts: string;
-    check_out_ts: string;
+    checkin_at: string;
+    checkout_at: string;
     status: string;
   }[];
 }

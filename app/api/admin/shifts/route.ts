@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+import { formatTime } from '@/lib/utils/date'
 
 export const dynamic = 'force-dynamic'
 
 const shiftSchema = z.object({
   event_id: z.string().uuid(),
   skill_id: z.number(),
-  start_ts: z.string(), // ISO 8601 datetime
-  end_ts: z.string(),
+  start_at: z.string(), // ISO 8601 datetime
+  end_at: z.string(),
   required: z.number().min(1).default(1)
 })
 
@@ -31,8 +32,8 @@ export async function GET(request: NextRequest) {
       .select(`
         id,
         name,
-        start_ts,
-        end_ts,
+        start_at,
+        end_at,
         required,
         events!inner(
           venue_id,
@@ -45,8 +46,8 @@ export async function GET(request: NextRequest) {
           staff!assignments_staff_id_fkey(name)
         )
       `)
-      .gte('start_ts', `${date}T00:00:00`)
-      .lte('start_ts', `${date}T23:59:59`)
+      .gte('start_at', `${date}T00:00:00`)
+      .lte('start_at', `${date}T23:59:59`)
 
     if (shiftsError) {
       console.error('Shifts error:', shiftsError)
@@ -142,32 +143,13 @@ export async function GET(request: NextRequest) {
                         (Array.isArray(shift.events) && shift.events[0]?.venues?.name) ||
                         '会場未設定'
       
-      // タイムスタンプから時刻部分を抽出（シフトページと同じ方式）
-      const formatTime = (dateStr: string) => {
-        if (!dateStr) return '-';
-
-        // timestampの場合、時刻部分を抽出してそのまま表示
-        // "2024-01-01T13:00:00+00:00" → "13:00"
-        const timeMatch = dateStr.match(/T(\d{2}):(\d{2})/);
-        if (timeMatch) {
-          return `${timeMatch[1]}:${timeMatch[2]}`;
-        }
-
-        // フォールバック
-        const date = new Date(dateStr);
-        return date.toLocaleTimeString('ja-JP', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-          timeZone: 'Asia/Tokyo'
-        });
-      };
+      // formatTimeはユーティリティからインポートされています
 
       return {
         id: shift.id,
         name: shift.name || '照明・リギング作業',
-        start_ts: formatTime(shift.start_ts),
-        end_ts: formatTime(shift.end_ts),
+        start_at: formatTime(shift.start_at),
+        end_at: formatTime(shift.end_at),
         required: shift.required,
         venue_name: venueName,
         assignments: shift.assignments?.map((a: any) => ({
@@ -221,7 +203,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 時間の妥当性チェック
-    if (new Date(validatedData.end_ts) <= new Date(validatedData.start_ts)) {
+    if (new Date(validatedData.end_at) <= new Date(validatedData.start_at)) {
       return NextResponse.json(
         { error: '終了時刻は開始時刻より後である必要があります' },
         { status: 400 }

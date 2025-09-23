@@ -15,7 +15,7 @@ const config = {
   testEnvironment: 'jsdom',
 
   // Module name mapping
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
     '^~/(.*)$': '<rootDir>/$1',
   },

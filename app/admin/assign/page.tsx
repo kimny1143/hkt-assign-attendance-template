@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useJSTDate } from '@/hooks/useJSTDate'
 
 interface Shift {
   id: string
   name: string
-  start_ts: string
-  end_ts: string
+  start_at: string
+  end_at: string
   required: number
   venue_name: string
   assignments: Assignment[]
@@ -34,6 +35,9 @@ export default function AssignPage() {
   const [availableStaff, setAvailableStaff] = useState<Staff[]>([])
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+
+  // useJSTDateフックから関数を取得
+  const { formatTime } = useJSTDate()
 
   useEffect(() => {
     checkAuth()
@@ -159,7 +163,7 @@ export default function AssignPage() {
                       <div>
                         <h3 className="font-bold text-lg">{shift.name}</h3>
                         <p className="text-sm text-gray-600">
-                          {shift.venue_name} | {shift.start_ts} - {shift.end_ts}
+                          {shift.venue_name} | {shift.start_at} - {shift.end_at}
                         </p>
                         <p className="text-sm text-gray-600">
                           必要人数: {shift.required}名 / 現在: {shift.assignments.filter(a => a.status === 'confirmed').length}名

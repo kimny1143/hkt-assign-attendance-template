@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Scanner } from '@yudiel/react-qr-scanner'
+import { useJSTDate } from '@/hooks/useJSTDate'
 
 interface TodayAssignment {
   id: string
   shifts: {
     id: string
-    start_ts: string
-    end_ts: string
+    start_at: string
+    end_at: string
     events: {
       name: string
       venues: {
@@ -29,6 +30,9 @@ export default function PunchPage() {
   const [user, setUser] = useState<any>(null)
   const [todayAssignments, setTodayAssignments] = useState<TodayAssignment[]>([])
   const router = useRouter()
+
+  // useJSTDateフックから関数を取得
+  const { formatTime } = useJSTDate()
 
   // 認証チェックとGPS自動取得
   useEffect(() => {
@@ -237,14 +241,7 @@ export default function PunchPage() {
                     📍 {assignment.shifts.events.venues.name}
                   </div>
                   <div className="text-gray-500">
-                    {(() => {
-                      // タイムスタンプから時刻部分を直接抽出
-                      const startMatch = assignment.shifts.start_ts.match(/T(\d{2}):(\d{2})/);
-                      const endMatch = assignment.shifts.end_ts.match(/T(\d{2}):(\d{2})/);
-                      const startTime = startMatch ? `${startMatch[1]}:${startMatch[2]}` : '--:--';
-                      const endTime = endMatch ? `${endMatch[1]}:${endMatch[2]}` : '--:--';
-                      return `${startTime}〜${endTime}`;
-                    })()}
+                    {formatTime(assignment.shifts.start_at)}〜{formatTime(assignment.shifts.end_at)}
                   </div>
                 </div>
               ))}

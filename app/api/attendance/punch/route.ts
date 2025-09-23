@@ -84,8 +84,8 @@ export async function POST(req: NextRequest) {
       )
     `)
     .eq('events.venue_id', equipment.venue_id)
-    .gte('start_ts', `${today}T00:00:00`)
-    .lte('start_ts', `${today}T23:59:59`)
+    .gte('start_at', `${today}T00:00:00`)
+    .lte('start_at', `${today}T23:59:59`)
     .single()
 
   if (shiftError || !shift) {

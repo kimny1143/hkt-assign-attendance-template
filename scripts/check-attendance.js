@@ -17,8 +17,8 @@ async function checkAttendance() {
         id,
         shift_id,
         staff_id,
-        checkin_ts,
-        checkout_ts,
+        checkin_at,
+        checkout_at,
         checkin_gps_lat,
         checkin_gps_lon,
         checkout_gps_lat,
@@ -27,8 +27,8 @@ async function checkAttendance() {
         staff (name),
         shifts (
           name,
-          start_ts,
-          end_ts,
+          start_at,
+          end_at,
           events (
             name,
             venues (name)
@@ -58,21 +58,21 @@ async function checkAttendance() {
         console.log(`ワークスケジュール: ${att.shifts.name}`);
         console.log(`イベント: ${att.shifts.events?.name || 'Unknown'}`);
         console.log(`会場: ${att.shifts.events?.venues?.name || 'Unknown'}`);
-        console.log(`予定時間: ${new Date(att.shifts.start_ts).toLocaleString('ja-JP')} 〜 ${new Date(att.shifts.end_ts).toLocaleString('ja-JP')}`);
+        console.log(`予定時間: ${new Date(att.shifts.start_at).toLocaleString('ja-JP')} 〜 ${new Date(att.shifts.end_at).toLocaleString('ja-JP')}`);
       }
 
-      if (att.checkin_ts) {
-        console.log(`出勤: ${new Date(att.checkin_ts).toLocaleString('ja-JP')}`);
+      if (att.checkin_at) {
+        console.log(`出勤: ${new Date(att.checkin_at).toLocaleString('ja-JP')}`);
         console.log(`  GPS: ${att.checkin_gps_lat?.toFixed(6)}, ${att.checkin_gps_lon?.toFixed(6)}`);
       }
 
-      if (att.checkout_ts) {
-        console.log(`退勤: ${new Date(att.checkout_ts).toLocaleString('ja-JP')}`);
+      if (att.checkout_at) {
+        console.log(`退勤: ${new Date(att.checkout_at).toLocaleString('ja-JP')}`);
         console.log(`  GPS: ${att.checkout_gps_lat?.toFixed(6)}, ${att.checkout_gps_lon?.toFixed(6)}`);
 
         // 勤務時間計算
-        const checkin = new Date(att.checkin_ts);
-        const checkout = new Date(att.checkout_ts);
+        const checkin = new Date(att.checkin_at);
+        const checkout = new Date(att.checkout_at);
         const hours = (checkout - checkin) / (1000 * 60 * 60);
         console.log(`  勤務時間: ${hours.toFixed(2)} 時間`);
       } else {
@@ -90,14 +90,14 @@ async function checkAttendance() {
 
     const { data: todayStats, error: statsError } = await supabase
       .from('attendances')
-      .select('id, checkin_ts, checkout_ts')
+      .select('id, checkin_at, checkout_at')
       .gte('created_at', todayISO);
 
     if (!statsError && todayStats) {
       console.log('\n=== 本日の統計 ===');
       console.log(`総打刻数: ${todayStats.length}`);
-      console.log(`出勤済み: ${todayStats.filter(a => a.checkin_ts).length}`);
-      console.log(`退勤済み: ${todayStats.filter(a => a.checkout_ts).length}`);
+      console.log(`出勤済み: ${todayStats.filter(a => a.checkin_at).length}`);
+      console.log(`退勤済み: ${todayStats.filter(a => a.checkout_at).length}`);
     }
 
   } catch (error) {

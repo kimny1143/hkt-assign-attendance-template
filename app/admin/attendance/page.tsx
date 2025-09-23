@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Calendar, Clock, MapPin, User, CheckCircle, XCircle } from 'lucide-react';
+import { useJSTDate } from '@/hooks/useJSTDate';
 
 interface Attendance {
   id: string;
   staff_id: string;
   shift_id: string;
-  check_in_ts: string | null;
-  check_out_ts: string | null;
+  checkin_at: string | null;
+  checkout_at: string | null;
   check_in_lat: number | null;
   check_in_lon: number | null;
   check_out_lat: number | null;
@@ -22,8 +23,8 @@ interface Attendance {
   };
   shifts: {
     name: string;
-    start_ts: string;
-    end_ts: string;
+    start_at: string;
+    end_at: string;
     events: {
       name: string;
       venues: {
@@ -37,8 +38,7 @@ interface Attendance {
 export default function AttendancePage() {
   const [attendances, setAttendances] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState(true);
-  // 今日の日付を2025-09-22に固定（テスト用）
-  const [selectedDate, setSelectedDate] = useState('2025-09-22');
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
   const supabase = createClient();
 
@@ -62,8 +62,8 @@ export default function AttendancePage() {
         id,
         staff_id,
         shift_id,
-        check_in_ts,
-        check_out_ts,
+        checkin_at,
+        checkout_at,
         check_in_lat,
         check_in_lon,
         check_out_lat,
@@ -76,8 +76,8 @@ export default function AttendancePage() {
         ),
         shifts!inner (
           name,
-          start_ts,
-          end_ts,
+          start_at,
+          end_at,
           events!inner (
             name,
             venues!inner (
@@ -99,27 +99,19 @@ export default function AttendancePage() {
       const formattedData = (data || []).map((item: any) => ({
         ...item,
         staff: item.staff || { name: '', code: null },
-        shifts: item.shifts || { name: '', start_ts: '', end_ts: '', events: null }
+        shifts: item.shifts || { name: '', start_at: '', end_at: '', events: null }
       })) as Attendance[];
       setAttendances(formattedData);
     }
     setLoading(false);
   };
 
-  const calculateWorkHours = (checkin: string | null, checkout: string | null) => {
-    if (!checkin || !checkout) return '-';
-    const start = new Date(checkin);
-    const end = new Date(checkout);
-    const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-    return `${hours.toFixed(1)}時間`;
-  };
+  // useJSTDateフックから関数を取得
+  const { formatTime, calculateWorkHours } = useJSTDate();
 
-  const formatTime = (dateString: string | null) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleTimeString('ja-JP', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  const formatWorkHours = (checkin: string | null, checkout: string | null) => {
+    const hours = calculateWorkHours(checkin, checkout, 'japanese');
+    return hours === '-' ? '-' : hours;
   };
 
   const getStatusColor = (checkin: string | null, checkout: string | null) => {
@@ -174,19 +166,19 @@ export default function AttendancePage() {
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="text-sm text-gray-600">出勤済み</div>
           <div className="text-2xl font-bold text-green-600">
-            {attendances.filter(a => a.check_in_ts).length}
+            {attendances.filter(a => a.checkin_at).length}
           </div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="text-sm text-gray-600">勤務中</div>
           <div className="text-2xl font-bold text-blue-600">
-            {attendances.filter(a => a.check_in_ts && !a.check_out_ts).length}
+            {attendances.filter(a => a.checkin_at && !a.checkout_at).length}
           </div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="text-sm text-gray-600">退勤済み</div>
           <div className="text-2xl font-bold text-gray-600">
-            {attendances.filter(a => a.check_out_ts).length}
+            {attendances.filter(a => a.checkout_at).length}
           </div>
         </div>
       </div>
@@ -257,17 +249,17 @@ export default function AttendancePage() {
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <div>
-                        {formatTime(attendance.shifts.start_ts)}
+                        {formatTime(attendance.shifts.start_at)}
                         〜
-                        {formatTime(attendance.shifts.end_ts)}
+                        {formatTime(attendance.shifts.end_at)}
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <div className="text-sm">
-                        {attendance.check_in_ts ? (
+                        {attendance.checkin_at ? (
                           <div className="flex items-center gap-1">
                             <CheckCircle className="w-4 h-4 text-green-600" />
-                            {formatTime(attendance.check_in_ts)}
+                            {formatTime(attendance.checkin_at)}
                           </div>
                         ) : (
                           <div className="flex items-center gap-1">
@@ -279,10 +271,10 @@ export default function AttendancePage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="text-sm">
-                        {attendance.check_out_ts ? (
+                        {attendance.checkout_at ? (
                           <div className="flex items-center gap-1">
                             <CheckCircle className="w-4 h-4 text-green-600" />
-                            {formatTime(attendance.check_out_ts)}
+                            {formatTime(attendance.checkout_at)}
                           </div>
                         ) : (
                           <div className="flex items-center gap-1">
@@ -293,11 +285,11 @@ export default function AttendancePage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      {calculateWorkHours(attendance.check_in_ts, attendance.check_out_ts)}
+                      {formatWorkHours(attendance.checkin_at, attendance.checkout_at)}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`text-sm font-medium ${getStatusColor(attendance.check_in_ts, attendance.check_out_ts)}`}>
-                        {getStatusText(attendance.check_in_ts, attendance.check_out_ts)}
+                      <span className={`text-sm font-medium ${getStatusColor(attendance.checkin_at, attendance.checkout_at)}`}>
+                        {getStatusText(attendance.checkin_at, attendance.checkout_at)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
