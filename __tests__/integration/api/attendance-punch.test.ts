@@ -110,9 +110,9 @@ describe('/api/attendance/punch', () => {
       expect(data).toEqual({
         ok: true,
         attendance: {
+          success: true,
           attendance_id: 'attendance-1',
-          action: 'checkin',
-          timestamp: expect.any(String),
+          message: 'Attendance recorded successfully',
         },
       })
 

@@ -18,10 +18,13 @@ process.env.APP_BASE_URL = 'http://localhost:3000'
 if (typeof global.Request === 'undefined') {
   global.Request = class Request {
     constructor(input, init) {
-      this.url = input
+      this._url = input
       this.method = init?.method || 'GET'
       this.headers = new Map(Object.entries(init?.headers || {}))
       this.body = init?.body
+    }
+    get url() {
+      return this._url
     }
     json() {
       return Promise.resolve(JSON.parse(this.body))
@@ -32,12 +35,24 @@ if (typeof global.Request === 'undefined') {
 if (typeof global.Response === 'undefined') {
   global.Response = class Response {
     constructor(body, init) {
-      this.body = body
+      this._body = body
       this.status = init?.status || 200
       this.headers = new Map(Object.entries(init?.headers || {}))
     }
+    get body() {
+      return this._body
+    }
     json() {
-      return Promise.resolve(JSON.parse(this.body))
+      return Promise.resolve(typeof this._body === 'string' ? JSON.parse(this._body) : this._body)
+    }
+    static json(data, init) {
+      return new Response(JSON.stringify(data), {
+        ...init,
+        headers: {
+          ...init?.headers,
+          'content-type': 'application/json'
+        }
+      })
     }
   }
 }
