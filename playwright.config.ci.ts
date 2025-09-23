@@ -55,7 +55,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run start',
     url: 'http://localhost:3000',
-    reuseExistingServer: false, // Always start fresh in CI
+    reuseExistingServer: !process.env.CI, // Start fresh in CI, reuse locally
     timeout: 120 * 1000,
     env: {
       NODE_ENV: 'production',
