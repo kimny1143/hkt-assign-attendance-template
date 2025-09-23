@@ -266,14 +266,40 @@ jobs:
 
       - name: Build application
         run: |
-          echo "Starting build in directory: $(pwd)"
-          echo "Files before build:"
+          echo "=== Build Debug Information ==="
+          echo "Current directory: $(pwd)"
+          echo "Node version: $(node -v)"
+          echo "NPM version: $(npm -v)"
+          echo ""
+          echo "=== Package.json build script ==="
+          grep '"build"' package.json
+          echo ""
+          echo "=== Files before build ==="
           ls -la | head -20
-          echo "Running: npm run build"
-          npm run build || (echo "Build failed with exit code $?"; exit 1)
-          echo "Build completed successfully"
-          echo "Files after build:"
+          echo ""
+          echo "=== Running build command ==="
+          npm run build 2>&1 | tee build.log
+          BUILD_EXIT_CODE=${PIPESTATUS[0]}
+          echo ""
+          echo "=== Build exit code: $BUILD_EXIT_CODE ==="
+          if [ $BUILD_EXIT_CODE -ne 0 ]; then
+            echo "❌ Build FAILED!"
+            echo "Last 50 lines of build output:"
+            tail -50 build.log
+            exit $BUILD_EXIT_CODE
+          fi
+          echo "✅ Build completed successfully"
+          echo ""
+          echo "=== Files after build ==="
           ls -la | head -20
+          echo ""
+          echo "=== Checking for .next directory ==="
+          if [ -d ".next" ]; then
+            echo "✅ .next directory exists"
+            echo "Size: $(du -sh .next)"
+          else
+            echo "❌ .next directory does NOT exist!"
+          fi
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-key
