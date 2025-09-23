@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { createClient } from '@supabase/supabase-js'
 
-const SLACK_SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET!
-const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN!
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
-const supabase = createClient(SUPABASE_URL, SERVICE_KEY)
+const SLACK_SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET || ''
+const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN || ''
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+
+// Only create supabase client if credentials are available
+const supabase = SUPABASE_URL && SERVICE_KEY
+  ? createClient(SUPABASE_URL, SERVICE_KEY)
+  : null
 
 // Slack署名検証
 function verifySlackSignature(
@@ -24,6 +28,12 @@ function verifySlackSignature(
 }
 
 export async function POST(req: NextRequest) {
+  // Check if environment is properly configured
+  if (!supabase || !SLACK_SIGNING_SECRET) {
+    console.error('Slack webhook not configured properly')
+    return NextResponse.json({ error: 'Service not configured' }, { status: 503 })
+  }
+
   const body = await req.text()
   const signature = req.headers.get('x-slack-signature') || ''
   const timestamp = req.headers.get('x-slack-request-timestamp') || ''
