@@ -1,0 +1,8 @@
+# Ignore patterns
+node_modules
+.next
+out
+public
+scripts/mcp
+*.config.js
+*.config.ts

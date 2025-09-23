@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import { z } from 'zod'
+import { getCurrentJST } from '@/lib/utils/date'
 
 // Haversine formula for GPS distance calculation
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -73,8 +74,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Too far from venue: ${Math.round(distance)}m` }, { status: 400 })
   }
 
-  // 今日のシフトを取得（機材がある会場のイベントから）
-  const today = new Date().toISOString().split('T')[0]
+  // 今日のシフトを取得（JST基準、機材がある会場のイベントから）
+  const today = getCurrentJST('DATE')
   const { data: shift, error: shiftError } = await supabase
     .from('shifts')
     .select(`

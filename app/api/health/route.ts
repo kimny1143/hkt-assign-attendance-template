@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { toSupabaseTimestamp } from '@/lib/utils/date'
 
 /**
  * Health check endpoint for monitoring and E2E tests
@@ -9,7 +10,7 @@ export async function GET() {
     // Basic health check
     const health = {
       status: 'ok',
-      timestamp: new Date().toISOString(),
+      timestamp: toSupabaseTimestamp(),
       environment: process.env.NODE_ENV || 'development',
       uptime: process.uptime(),
     }
@@ -42,7 +43,7 @@ export async function GET() {
     return NextResponse.json(
       {
         status: 'error',
-        timestamp: new Date().toISOString(),
+        timestamp: toSupabaseTimestamp(),
         message: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }

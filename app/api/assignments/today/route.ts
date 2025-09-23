@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
+import { getCurrentJST } from '@/lib/utils/date'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,9 +42,8 @@ export async function GET(req: NextRequest) {
   }
   console.log('Found staff:', staff)
 
-  // 本日のアサインメント取得
-  const today = new Date()
-  const todayStr = today.toISOString().split('T')[0]
+  // 本日のアサインメント取得（JST基準）
+  const todayStr = getCurrentJST('DATE')
 
   // まず本日のシフトを取得
   console.log('Fetching today shifts for date:', todayStr)
