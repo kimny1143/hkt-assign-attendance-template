@@ -128,9 +128,11 @@ describe('QR Scanner Component', () => {
       await waitFor(() => {
         expect(mockOnScan).toHaveBeenCalledWith('TEST-QR-12345')
       }, { timeout: 2000 })
-      
+
       // Should return to initial state after scanning
-      expect(screen.getByTestId('start-scanner')).toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.getByTestId('start-scanner')).toBeInTheDocument()
+      })
     })
 
     it('should handle camera access errors', async () => {
