@@ -27,7 +27,7 @@ export const mockGeolocation = {
 
 // Setup successful geolocation mock
 export const mockGeolocationSuccess = (coords = HKT48_THEATER_COORDS) => {
-  mockGeolocation.getCurrentPosition.mockImplementation((success) => {
+  mockGeolocation.getCurrentPosition.mockImplementation(((success: PositionCallback) => {
     success({
       coords: {
         latitude: coords.latitude,
@@ -37,23 +37,25 @@ export const mockGeolocationSuccess = (coords = HKT48_THEATER_COORDS) => {
         altitudeAccuracy: null,
         heading: null,
         speed: null,
-      },
+        toJSON: () => ({}),
+      } as GeolocationCoordinates,
       timestamp: Date.now(),
-    })
-  })
+      toJSON: () => ({}),
+    } as GeolocationPosition)
+  }) as any)
 }
 
 // Setup geolocation error mock
 export const mockGeolocationError = (code = 1, message = 'User denied Geolocation') => {
-  mockGeolocation.getCurrentPosition.mockImplementation((success, error) => {
+  mockGeolocation.getCurrentPosition.mockImplementation(((success: PositionCallback, error: PositionErrorCallback) => {
     error({
       code,
       message,
       PERMISSION_DENIED: 1,
       POSITION_UNAVAILABLE: 2,
       TIMEOUT: 3,
-    })
-  })
+    } as GeolocationPositionError)
+  }) as any)
 }
 
 // Helper to calculate distance between two points (Haversine formula)

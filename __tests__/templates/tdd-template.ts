@@ -58,7 +58,7 @@ describe('/api/new-feature', () => {
 
       // Mock authenticated user
       mockSupabaseClient.auth.getUser.mockResolvedValueOnce({
-        data: { user: { id: 'user-1', email: 'test@example.com' } },
+        data: { user: { id: 'user-1', email: 'test@example.com', user_metadata: {}, app_metadata: { role: 'user' } } },
         error: null,
       })
 
@@ -91,7 +91,7 @@ describe('/api/new-feature', () => {
       ]
 
       mockSupabaseClient.auth.getUser.mockResolvedValueOnce({
-        data: { user: { id: 'user-1' } },
+        data: { user: { id: 'user-1', email: 'user@example.com', user_metadata: {}, app_metadata: { role: 'user' } } },
         error: null,
       })
 
@@ -174,7 +174,7 @@ describe('/api/new-feature', () => {
     it('should handle database errors gracefully', async () => {
       // Arrange
       mockSupabaseClient.auth.getUser.mockResolvedValueOnce({
-        data: { user: { id: 'user-1' } },
+        data: { user: { id: 'user-1', email: 'user@example.com', user_metadata: {}, app_metadata: { role: 'user' } } },
         error: null,
       })
 
@@ -210,7 +210,7 @@ describe('/api/new-feature', () => {
     it('should handle empty request body', async () => {
       // Arrange
       mockSupabaseClient.auth.getUser.mockResolvedValueOnce({
-        data: { user: { id: 'user-1' } },
+        data: { user: { id: 'user-1', email: 'user@example.com', user_metadata: {}, app_metadata: { role: 'user' } } },
         error: null,
       })
 
@@ -293,7 +293,7 @@ describe('/api/new-feature', () => {
       it(`should handle ${role} role permissions correctly`, async () => {
         // Arrange
         mockSupabaseClient.auth.getUser.mockResolvedValueOnce({
-          data: { user: { id: 'user-1', email: `${role}@test.com` } },
+          data: { user: { id: 'user-1', email: `${role}@test.com`, user_metadata: {}, app_metadata: { role } } },
           error: null,
         })
 
@@ -317,7 +317,7 @@ describe('/api/new-feature', () => {
     it('should deny access to unauthorized operations', async () => {
       // Arrange
       mockSupabaseClient.auth.getUser.mockResolvedValueOnce({
-        data: { user: { id: 'staff-user-1' } },
+        data: { user: { id: 'staff-user-1', email: 'staff@example.com', user_metadata: {}, app_metadata: { role: 'staff' } } },
         error: null,
       })
 

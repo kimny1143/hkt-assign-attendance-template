@@ -253,13 +253,13 @@ export default function StaffDetailPage() {
                   {staff.attendances.slice(0, 5).map((attendance) => (
                     <tr key={attendance.id}>
                       <td className="px-4 py-2 text-sm">
-                        {attendance.check_in_ts
-                          ? new Date(attendance.check_in_ts).toLocaleString('ja-JP')
+                        {attendance.checkin_at
+                          ? new Date(attendance.checkin_at).toLocaleString('ja-JP')
                           : '-'}
                       </td>
                       <td className="px-4 py-2 text-sm">
-                        {attendance.check_out_ts
-                          ? new Date(attendance.check_out_ts).toLocaleString('ja-JP')
+                        {attendance.checkout_at
+                          ? new Date(attendance.checkout_at).toLocaleString('ja-JP')
                           : '-'}
                       </td>
                       <td className="px-4 py-2">

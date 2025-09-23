@@ -182,12 +182,15 @@ test.describe('Attendance Punch System', () => {
     await page.addInitScript(() => {
       Object.defineProperty(navigator, 'geolocation', {
         value: {
-          getCurrentPosition: (success, error, options) => {
+          getCurrentPosition: (success: PositionCallback, error: PositionErrorCallback, options?: PositionOptions) => {
             setTimeout(() => {
               error({
                 code: 3, // TIMEOUT
-                message: 'Geolocation timeout'
-              })
+                message: 'Geolocation timeout',
+                PERMISSION_DENIED: 1,
+                POSITION_UNAVAILABLE: 2,
+                TIMEOUT: 3,
+              } as GeolocationPositionError)
             }, 100)
           }
         }
@@ -207,21 +210,31 @@ test.describe('Attendance Punch System', () => {
       let attempts = 0
       Object.defineProperty(navigator, 'geolocation', {
         value: {
-          getCurrentPosition: (success, error, options) => {
+          getCurrentPosition: (success: PositionCallback, error: PositionErrorCallback, options?: PositionOptions) => {
             attempts++
             if (attempts === 1) {
               error({
                 code: 2, // POSITION_UNAVAILABLE
-                message: 'Position unavailable'
-              })
+                message: 'Position unavailable',
+                PERMISSION_DENIED: 1,
+                POSITION_UNAVAILABLE: 2,
+                TIMEOUT: 3,
+              } as GeolocationPositionError)
             } else {
               success({
                 coords: {
                   latitude: 33.5904,
                   longitude: 130.4017,
-                  accuracy: 10
-                }
-              })
+                  accuracy: 10,
+                  altitude: null,
+                  altitudeAccuracy: null,
+                  heading: null,
+                  speed: null,
+                  toJSON: () => ({}),
+                } as GeolocationCoordinates,
+                timestamp: Date.now(),
+                toJSON: () => ({}),
+              } as GeolocationPosition)
             }
           }
         }

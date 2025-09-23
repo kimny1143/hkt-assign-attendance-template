@@ -48,59 +48,50 @@ describe('/api/attendance/punch', () => {
 
       // Mock authenticated user
       mockSupabaseClient.auth.getUser.mockResolvedValueOnce({
-        data: { user: { id: 'staff-user-1', email: 'staff@example.com' } },
+        data: { user: { id: 'staff-user-1', email: 'staff@example.com', user_metadata: {}, app_metadata: { role: 'staff' } } },
         error: null,
       })
 
       // Mock equipment lookup with venue coordinates
-      mockSupabaseClient.from.mockReturnValueOnce({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            eq: jest.fn().mockReturnValue({
-              single: jest.fn().mockResolvedValue({
-                data: {
-                  id: 'equipment-1',
-                  venue_id: 'venue-1',
-                  name: 'PA Console',
-                  venues: {
-                    id: 'venue-1',
-                    lat: HKT48_THEATER_COORDS.latitude,
-                    lon: HKT48_THEATER_COORDS.longitude,
-                  },
-                },
-                error: null,
-              }),
-            }),
-          }),
-        }),
+      const mockSingle = jest.fn().mockResolvedValue({
+        data: {
+          id: 'equipment-1',
+          venue_id: 'venue-1',
+          name: 'PA Console',
+          venues: {
+            id: 'venue-1',
+            lat: HKT48_THEATER_COORDS.latitude,
+            lon: HKT48_THEATER_COORDS.longitude,
+          },
+        },
+        error: null,
       })
+      const mockEq2 = jest.fn().mockReturnValue({ single: mockSingle })
+      const mockEq1 = jest.fn().mockReturnValue({ eq: mockEq2 })
+      const mockSelect = jest.fn().mockReturnValue({ eq: mockEq1 })
+      mockSupabaseClient.from.mockReturnValueOnce({ select: mockSelect })
 
       // Mock shift lookup for today
       const today = new Date().toISOString().split('T')[0]
-      mockSupabaseClient.from.mockReturnValueOnce({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            gte: jest.fn().mockReturnValue({
-              lte: jest.fn().mockReturnValue({
-                single: jest.fn().mockResolvedValue({
-                  data: {
-                    id: 'shift-1',
-                    events: { venue_id: 'venue-1' },
-                  },
-                  error: null,
-                }),
-              }),
-            }),
-          }),
-        }),
+      const mockShiftSingle = jest.fn().mockResolvedValue({
+        data: {
+          id: 'shift-1',
+          events: { venue_id: 'venue-1' },
+        },
+        error: null,
       })
+      const mockLte = jest.fn().mockReturnValue({ single: mockShiftSingle })
+      const mockGte = jest.fn().mockReturnValue({ lte: mockLte })
+      const mockShiftEq = jest.fn().mockReturnValue({ gte: mockGte })
+      const mockShiftSelect = jest.fn().mockReturnValue({ eq: mockShiftEq })
+      mockSupabaseClient.from.mockReturnValueOnce({ select: mockShiftSelect })
 
       // Mock attendance_punch RPC
       mockSupabaseClient.rpc.mockResolvedValueOnce({
         data: {
+          success: true,
           attendance_id: 'attendance-1',
-          action: 'checkin',
-          timestamp: new Date().toISOString(),
+          message: 'Attendance recorded successfully',
         },
         error: null,
       })
@@ -147,32 +138,28 @@ describe('/api/attendance/punch', () => {
 
       // Mock authenticated user
       mockSupabaseClient.auth.getUser.mockResolvedValueOnce({
-        data: { user: { id: 'staff-user-1' } },
+        data: { user: { id: 'staff-user-1', email: 'staff@example.com', user_metadata: {}, app_metadata: { role: 'staff' } } },
         error: null,
       })
 
       // Mock equipment lookup
-      mockSupabaseClient.from.mockReturnValueOnce({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            eq: jest.fn().mockReturnValue({
-              single: jest.fn().mockResolvedValue({
-                data: {
-                  id: 'equipment-1',
-                  venue_id: 'venue-1',
-                  name: 'PA Console',
-                  venues: {
-                    id: 'venue-1',
-                    lat: HKT48_THEATER_COORDS.latitude,
-                    lon: HKT48_THEATER_COORDS.longitude,
-                  },
-                },
-                error: null,
-              }),
-            }),
-          }),
-        }),
+      const mockEquipSingle = jest.fn().mockResolvedValue({
+        data: {
+          id: 'equipment-1',
+          venue_id: 'venue-1',
+          name: 'PA Console',
+          venues: {
+            id: 'venue-1',
+            lat: HKT48_THEATER_COORDS.latitude,
+            lon: HKT48_THEATER_COORDS.longitude,
+          },
+        },
+        error: null,
       })
+      const mockEquipEq2 = jest.fn().mockReturnValue({ single: mockEquipSingle })
+      const mockEquipEq1 = jest.fn().mockReturnValue({ eq: mockEquipEq2 })
+      const mockEquipSelect = jest.fn().mockReturnValue({ eq: mockEquipEq1 })
+      mockSupabaseClient.from.mockReturnValueOnce({ select: mockEquipSelect })
 
       const request = new NextRequest('http://localhost:3000/api/attendance/punch', {
         method: 'POST',
@@ -208,23 +195,19 @@ describe('/api/attendance/punch', () => {
 
       // Mock authenticated user
       mockSupabaseClient.auth.getUser.mockResolvedValueOnce({
-        data: { user: { id: 'staff-user-1' } },
+        data: { user: { id: 'staff-user-1', email: 'staff@example.com', user_metadata: {}, app_metadata: { role: 'staff' } } },
         error: null,
       })
 
       // Mock equipment lookup returning no data
-      mockSupabaseClient.from.mockReturnValueOnce({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            eq: jest.fn().mockReturnValue({
-              single: jest.fn().mockResolvedValue({
-                data: null,
-                error: createSupabaseError('Equipment not found'),
-              }),
-            }),
-          }),
-        }),
+      const mockNotFoundSingle = jest.fn().mockResolvedValue({
+        data: null,
+        error: createSupabaseError('Equipment not found'),
       })
+      const mockNotFoundEq2 = jest.fn().mockReturnValue({ single: mockNotFoundSingle })
+      const mockNotFoundEq1 = jest.fn().mockReturnValue({ eq: mockNotFoundEq2 })
+      const mockNotFoundSelect = jest.fn().mockReturnValue({ eq: mockNotFoundEq1 })
+      mockSupabaseClient.from.mockReturnValueOnce({ select: mockNotFoundSelect })
 
       const request = new NextRequest('http://localhost:3000/api/attendance/punch', {
         method: 'POST',
@@ -251,43 +234,34 @@ describe('/api/attendance/punch', () => {
 
       // Mock authenticated user
       mockSupabaseClient.auth.getUser.mockResolvedValueOnce({
-        data: { user: { id: 'staff-user-1' } },
+        data: { user: { id: 'staff-user-1', email: 'staff@example.com', user_metadata: {}, app_metadata: { role: 'staff' } } },
         error: null,
       })
 
       // Mock equipment lookup
-      mockSupabaseClient.from.mockReturnValueOnce({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            eq: jest.fn().mockReturnValue({
-              single: jest.fn().mockResolvedValue({
-                data: {
-                  id: 'equipment-1',
-                  venue_id: 'venue-1',
-                  venues: HKT48_THEATER_COORDS,
-                },
-                error: null,
-              }),
-            }),
-          }),
-        }),
+      const mockEquip2Single = jest.fn().mockResolvedValue({
+        data: {
+          id: 'equipment-1',
+          venue_id: 'venue-1',
+          venues: HKT48_THEATER_COORDS,
+        },
+        error: null,
       })
+      const mockEquip2Eq2 = jest.fn().mockReturnValue({ single: mockEquip2Single })
+      const mockEquip2Eq1 = jest.fn().mockReturnValue({ eq: mockEquip2Eq2 })
+      const mockEquip2Select = jest.fn().mockReturnValue({ eq: mockEquip2Eq1 })
+      mockSupabaseClient.from.mockReturnValueOnce({ select: mockEquip2Select })
 
       // Mock shift lookup returning no data
-      mockSupabaseClient.from.mockReturnValueOnce({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            gte: jest.fn().mockReturnValue({
-              lte: jest.fn().mockReturnValue({
-                single: jest.fn().mockResolvedValue({
-                  data: null,
-                  error: createSupabaseError('No shift found'),
-                }),
-              }),
-            }),
-          }),
-        }),
+      const mockNoShiftSingle = jest.fn().mockResolvedValue({
+        data: null,
+        error: createSupabaseError('No shift found'),
       })
+      const mockNoShiftLte = jest.fn().mockReturnValue({ single: mockNoShiftSingle })
+      const mockNoShiftGte = jest.fn().mockReturnValue({ lte: mockNoShiftLte })
+      const mockNoShiftEq = jest.fn().mockReturnValue({ gte: mockNoShiftGte })
+      const mockNoShiftSelect = jest.fn().mockReturnValue({ eq: mockNoShiftEq })
+      mockSupabaseClient.from.mockReturnValueOnce({ select: mockNoShiftSelect })
 
       const request = new NextRequest('http://localhost:3000/api/attendance/punch', {
         method: 'POST',
@@ -517,27 +491,22 @@ describe('/api/attendance/punch', () => {
     })
 
     // Mock shift lookup
-    mockSupabaseClient.from.mockReturnValueOnce({
-      select: jest.fn().mockReturnValue({
-        eq: jest.fn().mockReturnValue({
-          gte: jest.fn().mockReturnValue({
-            lte: jest.fn().mockReturnValue({
-              single: jest.fn().mockResolvedValue({
-                data: { id: 'shift-1', events: { venue_id: 'venue-1' } },
-                error: null,
-              }),
-            }),
-          }),
-        }),
-      }),
+    const mockHelperShiftSingle = jest.fn().mockResolvedValue({
+      data: { id: 'shift-1', events: { venue_id: 'venue-1' } },
+      error: null,
     })
+    const mockHelperShiftLte = jest.fn().mockReturnValue({ single: mockHelperShiftSingle })
+    const mockHelperShiftGte = jest.fn().mockReturnValue({ lte: mockHelperShiftLte })
+    const mockHelperShiftEq = jest.fn().mockReturnValue({ gte: mockHelperShiftGte })
+    const mockHelperShiftSelect = jest.fn().mockReturnValue({ eq: mockHelperShiftEq })
+    mockSupabaseClient.from.mockReturnValueOnce({ select: mockHelperShiftSelect })
 
     // Mock attendance_punch RPC
     mockSupabaseClient.rpc.mockResolvedValueOnce({
       data: {
+        success: true,
         attendance_id: 'attendance-1',
-        action: purpose,
-        timestamp: new Date().toISOString(),
+        message: 'Attendance recorded successfully',
       },
       error: null,
     })

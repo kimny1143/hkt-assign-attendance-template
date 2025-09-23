@@ -2,9 +2,9 @@ import { jest } from '@jest/globals'
 
 // Mock QR code scanner
 export const mockQRScanner = {
-  scan: jest.fn(),
-  stop: jest.fn(),
-  start: jest.fn(),
+  scan: jest.fn<() => Promise<{text: string; format: string}>>(),
+  stop: jest.fn<() => void>(),
+  start: jest.fn<() => void>(),
 }
 
 // Valid QR tokens for testing
@@ -30,7 +30,7 @@ export const mockQRScanError = (error = 'Camera permission denied') => {
 
 // Mock camera API for QR scanning
 export const mockCameraAPI = {
-  getUserMedia: jest.fn(),
+  getUserMedia: jest.fn<() => Promise<MediaStream>>(),
 }
 
 // Setup successful camera access
@@ -46,7 +46,7 @@ export const mockCameraSuccess = () => {
       },
     ],
     active: true,
-  })
+  } as unknown as MediaStream)
 }
 
 // Setup camera access denied
@@ -58,9 +58,9 @@ export const mockCameraError = (error = 'NotAllowedError') => {
 
 // Mock QR code validation
 export const mockQRValidation = {
-  validateToken: jest.fn(),
-  isExpired: jest.fn(),
-  getTokenPurpose: jest.fn(),
+  validateToken: jest.fn<() => Promise<{valid: boolean; shift_id?: string; purpose?: string; expires_at?: string; error?: string}>>(),
+  isExpired: jest.fn<() => boolean>(),
+  getTokenPurpose: jest.fn<() => string>(),
 }
 
 // Setup QR validation responses
@@ -123,7 +123,7 @@ export const setupQRMocks = () => {
 
 // Mock barcode detector API (if available)
 export const mockBarcodeDetector = {
-  detect: jest.fn(),
+  detect: jest.fn<() => Promise<Array<{rawValue: string; format: string; boundingBox: {x: number; y: number; width: number; height: number}}>>>(),
 }
 
 export const mockBarcodeDetectorSuccess = (text = VALID_QR_TOKENS.checkin) => {

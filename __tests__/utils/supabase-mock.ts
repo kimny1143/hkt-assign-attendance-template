@@ -36,7 +36,7 @@ export const mockSupabaseClient = {
         error: null,
       })
     ),
-    onAuthStateChange: jest.fn((callback) => {
+    onAuthStateChange: jest.fn((callback: (event: string, session: any) => void) => {
       // Simulate auth state change
       callback('SIGNED_IN', {
         user: {
@@ -67,7 +67,7 @@ export const mockSupabaseClient = {
     insert: jest.fn(() => ({
       select: jest.fn(() =>
         Promise.resolve({
-          data: [{ id: 'new-id', ...getMockData(table)[0] }],
+          data: [{ ...getMockData(table)[0], id: 'new-id' }],
           error: null,
         })
       ),
