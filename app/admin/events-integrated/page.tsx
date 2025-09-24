@@ -3,13 +3,38 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useJSTDate } from '@/hooks/useJSTDate';
-import { Calendar, Clock, MapPin, Users, Save, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Save, AlertCircle, FileText, Plus, Trash2 } from 'lucide-react';
 
 // 型定義
 interface Venue {
   id: string;
   name: string;
   address?: string;
+}
+
+interface EventTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  category: string;
+  default_duration_hours: number;
+  shift_templates: ShiftTemplate[];
+}
+
+interface ShiftTemplate {
+  id: string;
+  name: string;
+  offset_start_minutes: number;
+  duration_minutes: number;
+  required_staff: number;
+  skill_id?: number;
+  is_critical: boolean;
+  priority: number;
+  skills?: {
+    id: number;
+    name: string;
+    code: string;
+  };
 }
 
 interface EventFormData {
@@ -19,6 +44,7 @@ interface EventFormData {
   start_time: string;
   end_time: string;
   notes: string;
+  template_id?: string;
 }
 
 interface ShiftFormData {
@@ -27,37 +53,22 @@ interface ShiftFormData {
   start_time: string;
   end_time: string;
   required: number;
+  skill_id?: number;
 }
 
 interface IntegratedFormData {
   event: EventFormData;
   shifts: ShiftFormData[];
+  use_template: boolean;
 }
-
-// シフトテンプレート
-const shiftTemplates = {
-  standard: {
-    name: '標準イベント',
-    shifts: [
-      { name: '準備・リハ', offsetStart: -120, duration: 60, required: 2 },
-      { name: '本番', offsetStart: -60, duration: 240, required: 3 },
-      { name: '撤収', offsetStart: 180, duration: 60, required: 2 }
-    ]
-  },
-  simple: {
-    name: 'シンプル',
-    shifts: [
-      { name: '全日', offsetStart: -60, duration: 300, required: 2 }
-    ]
-  }
-};
 
 export default function EventsIntegratedPage() {
   const [activeTab, setActiveTab] = useState<'basic' | 'shifts' | 'preview'>('basic');
   const [venues, setVenues] = useState<Venue[]>([]);
+  const [templates, setTemplates] = useState<EventTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<EventTemplate | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
 
   const { toSupabaseTimestamp, formatDate, formatTime } = useJSTDate();
 
@@ -68,9 +79,11 @@ export default function EventsIntegratedPage() {
       open_time: '18:00',
       start_time: '19:00',
       end_time: '21:00',
-      notes: ''
+      notes: '',
+      template_id: ''
     },
-    shifts: []
+    shifts: [],
+    use_template: false
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -78,6 +91,7 @@ export default function EventsIntegratedPage() {
 
   useEffect(() => {
     fetchVenues();
+    fetchTemplates();
   }, []);
 
   const fetchVenues = async () => {
@@ -91,27 +105,51 @@ export default function EventsIntegratedPage() {
     }
   };
 
-  // シフトテンプレート適用
-  const applyTemplate = (templateKey: keyof typeof shiftTemplates) => {
-    const template = shiftTemplates[templateKey];
-    const baseTime = formData.event.start_time || '19:00';
-    const [baseHour, baseMin] = baseTime.split(':').map(Number);
+  const fetchTemplates = async () => {
+    try {
+      const response = await fetch('/api/admin/templates');
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setTemplates(data);
+      }
+    } catch (error) {
+      console.error('テンプレート取得エラー:', error);
+    }
+  };
 
-    const newShifts: ShiftFormData[] = template.shifts.map(shift => {
-      const startHour = baseHour + Math.floor(shift.offsetStart / 60);
-      const startMin = baseMin + (shift.offsetStart % 60);
-      const endHour = startHour + Math.floor(shift.duration / 60);
-      const endMin = startMin + (shift.duration % 60);
+  // テンプレート適用
+  const applyTemplate = (templateId: string) => {
+    const template = templates.find(t => t.id === templateId);
+    if (!template) return;
 
-      return {
-        name: shift.name,
-        start_time: `${String(startHour).padStart(2, '0')}:${String(startMin).padStart(2, '0')}`,
-        end_time: `${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`,
-        required: shift.required
-      };
-    });
+    setSelectedTemplate(template);
+    setFormData(prev => ({
+      ...prev,
+      event: { ...prev.event, template_id: templateId },
+      use_template: true
+    }));
 
-    setFormData(prev => ({ ...prev, shifts: newShifts }));
+    // テンプレートからシフトを生成
+    if (formData.event.event_date && formData.event.start_time) {
+      const baseTime = new Date(`${formData.event.event_date}T${formData.event.start_time}:00`);
+
+      const newShifts: ShiftFormData[] = template.shift_templates.map(shift => {
+        const startTime = new Date(baseTime.getTime() + shift.offset_start_minutes * 60000);
+        const endTime = new Date(startTime.getTime() + shift.duration_minutes * 60000);
+
+        return {
+          name: shift.name,
+          start_time: `${String(startTime.getHours()).padStart(2, '0')}:${String(startTime.getMinutes()).padStart(2, '0')}`,
+          end_time: `${String(endTime.getHours()).padStart(2, '0')}:${String(endTime.getMinutes()).padStart(2, '0')}`,
+          required: shift.required_staff,
+          skill_id: shift.skill_id
+        };
+      });
+
+      setFormData(prev => ({ ...prev, shifts: newShifts }));
+    } else {
+      alert('イベント日と開始時間を設定してからテンプレートを選択してください');
+    }
   };
 
   // シフト追加
@@ -125,8 +163,10 @@ export default function EventsIntegratedPage() {
 
     setFormData(prev => ({
       ...prev,
-      shifts: [...prev.shifts, newShift]
+      shifts: [...prev.shifts, newShift],
+      use_template: false
     }));
+    setSelectedTemplate(null);
   };
 
   // シフト削除
@@ -157,8 +197,8 @@ export default function EventsIntegratedPage() {
     if (!formData.event.event_date) {
       newErrors.date = 'イベント日を選択してください';
     }
-    if (formData.shifts.length === 0) {
-      newErrors.shifts = 'シフトを最低1つ設定してください';
+    if (formData.shifts.length === 0 && !formData.use_template) {
+      newErrors.shifts = 'シフトを最低1つ設定するか、テンプレートを選択してください';
     }
 
     // 時間の整合性チェック
@@ -172,44 +212,31 @@ export default function EventsIntegratedPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // 保存処理
+  // 保存処理（新しいAPIを使用）
   const handleSave = async () => {
     if (!validate()) return;
 
     setSaving(true);
     try {
-      // イベント作成
-      const { data: newEvent, error: eventError } = await supabase
-        .from('events')
-        .insert([{
-          venue_id: formData.event.venue_id,
-          event_date: formData.event.event_date,
-          open_time: formData.event.open_time,
-          start_time: formData.event.start_time,
-          end_time: formData.event.end_time,
-          notes: formData.event.notes
-        }])
-        .select()
-        .single();
+      const response = await fetch('/api/admin/events/integrated', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          event: formData.event,
+          shifts: formData.use_template ? undefined : formData.shifts,
+          use_template: formData.use_template
+        })
+      });
 
-      if (eventError) throw eventError;
+      const result = await response.json();
 
-      // シフト作成
-      const shiftsData = formData.shifts.map(shift => ({
-        event_id: newEvent.id,
-        name: shift.name || `${formData.event.event_date} シフト`,
-        start_at: toSupabaseTimestamp(`${formData.event.event_date}T${shift.start_time}:00`),
-        end_at: toSupabaseTimestamp(`${formData.event.event_date}T${shift.end_time}:00`),
-        required: shift.required
-      }));
+      if (!response.ok) {
+        throw new Error(result.error || '保存に失敗しました');
+      }
 
-      const { error: shiftsError } = await supabase
-        .from('shifts')
-        .insert(shiftsData);
-
-      if (shiftsError) throw shiftsError;
-
-      alert('イベントとシフトを作成しました');
+      alert(result.message || 'イベントとシフトを作成しました');
 
       // フォームリセット
       setFormData({
@@ -219,15 +246,18 @@ export default function EventsIntegratedPage() {
           open_time: '18:00',
           start_time: '19:00',
           end_time: '21:00',
-          notes: ''
+          notes: '',
+          template_id: ''
         },
-        shifts: []
+        shifts: [],
+        use_template: false
       });
+      setSelectedTemplate(null);
       setActiveTab('basic');
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Save error:', error);
-      alert('保存に失敗しました');
+      alert(error.message || '保存に失敗しました');
     } finally {
       setSaving(false);
     }
@@ -277,7 +307,7 @@ export default function EventsIntegratedPage() {
                 ? 'text-blue-600 border-b-2 border-blue-600'
                 : 'text-gray-600 hover:text-gray-800'
             }`}
-            disabled={formData.shifts.length === 0}
+            disabled={formData.shifts.length === 0 && !formData.use_template}
           >
             3. 確認・保存
           </button>
@@ -420,22 +450,39 @@ export default function EventsIntegratedPage() {
             <div className="space-y-6">
               {/* テンプレート選択 */}
               <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-medium mb-3">シフトテンプレート</h3>
-                <div className="flex gap-2">
-                  {Object.entries(shiftTemplates).map(([key, template]) => (
+                <h3 className="font-medium mb-3">
+                  <FileText className="inline w-4 h-4 mr-1" />
+                  テンプレートから選択
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {templates.map(template => (
                     <button
-                      key={key}
-                      onClick={() => applyTemplate(key as keyof typeof shiftTemplates)}
-                      className="px-4 py-2 bg-white border rounded-md hover:bg-gray-50"
+                      key={template.id}
+                      onClick={() => applyTemplate(template.id)}
+                      className={`p-3 text-left border rounded-lg hover:bg-white transition ${
+                        formData.event.template_id === template.id
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-300 bg-white'
+                      }`}
                     >
-                      {template.name}
+                      <div className="font-medium">{template.name}</div>
+                      {template.description && (
+                        <div className="text-sm text-gray-600 mt-1">{template.description}</div>
+                      )}
+                      <div className="text-xs text-gray-500 mt-2">
+                        シフト数: {template.shift_templates.length}
+                      </div>
                     </button>
                   ))}
+                </div>
+
+                <div className="mt-4 flex justify-center">
                   <button
                     onClick={addShift}
-                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
                   >
-                    カスタム追加
+                    <Plus className="w-4 h-4 mr-2" />
+                    カスタムシフトを追加
                   </button>
                 </div>
               </div>
@@ -445,6 +492,14 @@ export default function EventsIntegratedPage() {
                 <div className="bg-red-50 text-red-600 p-3 rounded-md flex items-center">
                   <AlertCircle className="w-5 h-5 mr-2" />
                   {errors.shifts}
+                </div>
+              )}
+
+              {selectedTemplate && (
+                <div className="bg-blue-50 border border-blue-300 p-3 rounded-md">
+                  <p className="text-sm text-blue-800">
+                    テンプレート「{selectedTemplate.name}」を適用中
+                  </p>
                 </div>
               )}
 
@@ -502,7 +557,7 @@ export default function EventsIntegratedPage() {
                             onClick={() => removeShift(index)}
                             className="p-2 text-red-600 hover:bg-red-50 rounded"
                           >
-                            削除
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
@@ -523,7 +578,7 @@ export default function EventsIntegratedPage() {
                 </button>
                 <button
                   onClick={() => setActiveTab('preview')}
-                  disabled={formData.shifts.length === 0}
+                  disabled={formData.shifts.length === 0 && !formData.use_template}
                   className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   次へ：確認
@@ -560,27 +615,57 @@ export default function EventsIntegratedPage() {
                       <dd className="font-medium">{formData.event.notes}</dd>
                     </div>
                   )}
+                  {selectedTemplate && (
+                    <div>
+                      <dt className="text-sm text-gray-600">使用テンプレート</dt>
+                      <dd className="font-medium">{selectedTemplate.name}</dd>
+                    </div>
+                  )}
                 </dl>
               </div>
 
               <div className="space-y-3">
                 <h3 className="text-lg font-bold">シフト設定</h3>
-                {formData.shifts.map((shift, index) => (
-                  <div key={index} className="bg-white border p-4 rounded-lg">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-medium">{shift.name || `シフト ${index + 1}`}</p>
-                        <p className="text-sm text-gray-600">
-                          {shift.start_time} - {shift.end_time}
-                        </p>
+                {formData.use_template && selectedTemplate ? (
+                  <div className="bg-blue-50 border border-blue-300 p-4 rounded-lg">
+                    <p className="text-sm text-blue-800 mb-3">
+                      テンプレート「{selectedTemplate.name}」から自動生成されます
+                    </p>
+                    {formData.shifts.map((shift, index) => (
+                      <div key={index} className="bg-white border p-4 rounded-lg mb-2">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium">{shift.name || `シフト ${index + 1}`}</p>
+                            <p className="text-sm text-gray-600">
+                              {shift.start_time} - {shift.end_time}
+                            </p>
+                          </div>
+                          <div className="flex items-center">
+                            <Users className="w-4 h-4 mr-1 text-gray-500" />
+                            <span className="font-medium">{shift.required}名</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center">
-                        <Users className="w-4 h-4 mr-1 text-gray-500" />
-                        <span className="font-medium">{shift.required}名</span>
+                    ))}
+                  </div>
+                ) : (
+                  formData.shifts.map((shift, index) => (
+                    <div key={index} className="bg-white border p-4 rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-medium">{shift.name || `シフト ${index + 1}`}</p>
+                          <p className="text-sm text-gray-600">
+                            {shift.start_time} - {shift.end_time}
+                          </p>
+                        </div>
+                        <div className="flex items-center">
+                          <Users className="w-4 h-4 mr-1 text-gray-500" />
+                          <span className="font-medium">{shift.required}名</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
                 <div className="text-sm text-gray-600 mt-2">
                   合計必要人数: {formData.shifts.reduce((sum, s) => sum + s.required, 0)}名
                 </div>
