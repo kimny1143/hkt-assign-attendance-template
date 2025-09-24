@@ -148,8 +148,8 @@ export async function GET(request: NextRequest) {
       return {
         id: shift.id,
         name: shift.name || '照明・リギング作業',
-        start_at: formatTime(shift.start_at),
-        end_at: formatTime(shift.end_at),
+        start_at: shift.start_at,  // UTCタイムスタンプのまま返す
+        end_at: shift.end_at,      // UTCタイムスタンプのまま返す
         required: shift.required,
         venue_name: venueName,
         assignments: shift.assignments?.map((a: any) => ({

@@ -47,7 +47,8 @@ export default function AdminLayout({
                 {pathname.includes('/staff') && 'スタッフ管理'}
                 {pathname.includes('/venues') && '会場管理'}
                 {pathname.includes('/equipment') && '機材QR管理'}
-                {pathname.includes('/events') && 'イベント管理'}
+                {pathname.includes('/events-integrated') && 'イベント・シフト統合管理'}
+                {pathname.includes('/events') && !pathname.includes('/events-integrated') && 'イベント管理'}
                 {pathname.includes('/shifts') && 'シフト管理'}
                 {pathname.includes('/assign') && 'アサイン管理'}
                 {pathname.includes('/attendance') && '勤怠管理'}

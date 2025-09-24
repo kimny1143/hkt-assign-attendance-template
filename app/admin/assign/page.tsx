@@ -163,7 +163,7 @@ export default function AssignPage() {
                       <div>
                         <h3 className="font-bold text-lg">{shift.name}</h3>
                         <p className="text-sm text-gray-600">
-                          {shift.venue_name} | {shift.start_at} - {shift.end_at}
+                          {shift.venue_name} | {formatTime(shift.start_at)} - {formatTime(shift.end_at)}
                         </p>
                         <p className="text-sm text-gray-600">
                           必要人数: {shift.required}名 / 現在: {shift.assignments.filter(a => a.status === 'confirmed').length}名
