@@ -46,10 +46,21 @@ export async function POST(request: Request) {
     }
 
     // 管理者権限チェック
+    // まずスタッフIDを取得
+    const { data: staff } = await supabase
+      .from('staff')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!staff) {
+      return NextResponse.json({ error: 'スタッフ情報が見つかりません' }, { status: 403 });
+    }
+
     const { data: userRole } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('staff_id', staff.id)
       .single();
 
     if (!userRole || !['admin', 'manager'].includes(userRole.role)) {
@@ -222,10 +233,21 @@ export async function PUT(request: Request) {
     }
 
     // 管理者権限チェック
+    // まずスタッフIDを取得
+    const { data: staff } = await supabase
+      .from('staff')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!staff) {
+      return NextResponse.json({ error: 'スタッフ情報が見つかりません' }, { status: 403 });
+    }
+
     const { data: userRole } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('staff_id', staff.id)
       .single();
 
     if (!userRole || !['admin', 'manager'].includes(userRole.role)) {
