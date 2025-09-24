@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import { z } from 'zod'
-import { getCurrentJST } from '@/lib/utils/date'
+import { getCurrentJST, toSupabaseTimestamp } from '@/lib/utils/date'
 
 // Haversine formula for GPS distance calculation
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -76,6 +76,13 @@ export async function POST(req: NextRequest) {
 
   // 今日のシフトを取得（JST基準、機材がある会場のイベントから）
   const today = getCurrentJST('DATE')
+
+  // JSTの日付をUTCに変換してフィルタリング
+  const startOfDayJST = `${today}T00:00:00`
+  const endOfDayJST = `${today}T23:59:59`
+  const startOfDayUTC = toSupabaseTimestamp(startOfDayJST)
+  const endOfDayUTC = toSupabaseTimestamp(endOfDayJST)
+
   const { data: shift, error: shiftError } = await supabase
     .from('shifts')
     .select(`
@@ -85,8 +92,8 @@ export async function POST(req: NextRequest) {
       )
     `)
     .eq('events.venue_id', equipment.venue_id)
-    .gte('start_at', `${today}T00:00:00`)
-    .lte('start_at', `${today}T23:59:59`)
+    .gte('start_at', startOfDayUTC)
+    .lte('start_at', endOfDayUTC)
     .single()
 
   if (shiftError || !shift) {

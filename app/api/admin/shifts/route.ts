@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
-import { formatTime } from '@/lib/utils/date'
+import { formatTime, toSupabaseTimestamp } from '@/lib/utils/date'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,6 +26,14 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
 
+    // JSTの日付をUTCに変換してフィルタリング
+    // JST 00:00:00 = UTC 前日15:00:00
+    // JST 23:59:59 = UTC 当日14:59:59
+    const startOfDayJST = `${date}T00:00:00`
+    const endOfDayJST = `${date}T23:59:59`
+    const startOfDayUTC = toSupabaseTimestamp(startOfDayJST)
+    const endOfDayUTC = toSupabaseTimestamp(endOfDayJST)
+
     // その日のシフトを取得
     const { data: shifts, error: shiftsError } = await supabase
       .from('shifts')
@@ -46,8 +54,8 @@ export async function GET(request: NextRequest) {
           staff!assignments_staff_id_fkey(name)
         )
       `)
-      .gte('start_at', `${date}T00:00:00`)
-      .lte('start_at', `${date}T23:59:59`)
+      .gte('start_at', startOfDayUTC)
+      .lte('start_at', endOfDayUTC)
 
     if (shiftsError) {
       console.error('Shifts error:', shiftsError)

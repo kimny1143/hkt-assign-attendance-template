@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
-import { getCurrentJST } from '@/lib/utils/date'
+import { getCurrentJST, toSupabaseTimestamp } from '@/lib/utils/date'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,13 +45,19 @@ export async function GET(req: NextRequest) {
   // 本日のアサインメント取得（JST基準）
   const todayStr = getCurrentJST('DATE')
 
+  // JSTの日付をUTCに変換してフィルタリング
+  const startOfDayJST = `${todayStr}T00:00:00`
+  const endOfDayJST = `${todayStr}T23:59:59`
+  const startOfDayUTC = toSupabaseTimestamp(startOfDayJST)
+  const endOfDayUTC = toSupabaseTimestamp(endOfDayJST)
+
   // まず本日のシフトを取得
-  console.log('Fetching today shifts for date:', todayStr)
+  console.log('Fetching today shifts for date:', todayStr, 'UTC range:', startOfDayUTC, '-', endOfDayUTC)
   const { data: todayShifts, error: shiftError } = await supabase
     .from('shifts')
     .select('id')
-    .gte('start_at', `${todayStr}T00:00:00`)
-    .lte('start_at', `${todayStr}T23:59:59`)
+    .gte('start_at', startOfDayUTC)
+    .lte('start_at', endOfDayUTC)
 
   if (shiftError) {
     console.error('Shift fetch error:', shiftError)
