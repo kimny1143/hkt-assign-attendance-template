@@ -58,40 +58,37 @@ describe('/api/attendance/punch', () => {
           id: 'equipment-1',
           venue_id: 'venue-1',
           name: 'PA Console',
-          venues: {
-            id: 'venue-1',
-            lat: HKT48_THEATER_COORDS.latitude,
-            lon: HKT48_THEATER_COORDS.longitude,
-          },
         },
         error: null,
       })
-      const mockEq2 = jest.fn().mockReturnValue({ single: mockSingle })
-      const mockEq1 = jest.fn().mockReturnValue({ eq: mockEq2 })
-      const mockSelect = jest.fn().mockReturnValue({ eq: mockEq1 })
+      const mockMatch = jest.fn().mockReturnValue({ single: mockSingle })
+      const mockSelect = jest.fn().mockReturnValue({ match: mockMatch })
       mockSupabaseClient.from.mockReturnValueOnce({ select: mockSelect })
 
-      // Mock shift lookup for today
-      const today = new Date().toISOString().split('T')[0]
-      const mockShiftSingle = jest.fn().mockResolvedValue({
-        data: {
-          id: 'shift-1',
-          events: { venue_id: 'venue-1' },
-        },
+      // Mock find_shifts_by_location_and_date RPC (PostGIS function)
+      mockSupabaseClient.rpc.mockResolvedValueOnce({
+        data: [{
+          shift_id: 'shift-1',
+          event_name: 'Test Event',
+          venue_name: 'HKT48 Theater',
+          distance_meters: 50,
+          start_at: new Date().toISOString(),
+          end_at: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
+        }],
         error: null,
       })
-      const mockLte = jest.fn().mockReturnValue({ single: mockShiftSingle })
-      const mockGte = jest.fn().mockReturnValue({ lte: mockLte })
-      const mockShiftEq = jest.fn().mockReturnValue({ gte: mockGte })
-      const mockShiftSelect = jest.fn().mockReturnValue({ eq: mockShiftEq })
-      mockSupabaseClient.from.mockReturnValueOnce({ select: mockShiftSelect })
 
-      // Mock attendance_punch RPC
+      // Mock process_attendance_punch RPC (PostGIS integrated function)
       mockSupabaseClient.rpc.mockResolvedValueOnce({
         data: {
           success: true,
-          attendance_id: 'attendance-1',
-          message: 'Attendance recorded successfully',
+          id: 'attendance-1',
+          staff_id: 'staff-1',
+          shift_id: 'shift-1',
+          checkin_at: new Date().toISOString(),
+          checkout_at: null,
+          status: 'pending',
+          distance_meters: 50,
         },
         error: null,
       })
@@ -111,13 +108,18 @@ describe('/api/attendance/punch', () => {
         ok: true,
         attendance: {
           success: true,
-          attendance_id: 'attendance-1',
-          message: 'Attendance recorded successfully',
+          id: 'attendance-1',
+          staff_id: 'staff-1',
+          shift_id: 'shift-1',
+          checkin_at: expect.any(String),
+          checkout_at: null,
+          status: 'pending',
+          distance_meters: 50,
         },
       })
 
       // Verify RPC was called with correct parameters
-      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('attendance_punch', {
+      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('process_attendance_punch', {
         p_staff_uid: 'staff-user-1',
         p_shift_id: 'shift-1',
         p_equipment_qr: 'VALID-QR-12345',
@@ -148,18 +150,18 @@ describe('/api/attendance/punch', () => {
           id: 'equipment-1',
           venue_id: 'venue-1',
           name: 'PA Console',
-          venues: {
-            id: 'venue-1',
-            lat: HKT48_THEATER_COORDS.latitude,
-            lon: HKT48_THEATER_COORDS.longitude,
-          },
         },
         error: null,
       })
-      const mockEquipEq2 = jest.fn().mockReturnValue({ single: mockEquipSingle })
-      const mockEquipEq1 = jest.fn().mockReturnValue({ eq: mockEquipEq2 })
-      const mockEquipSelect = jest.fn().mockReturnValue({ eq: mockEquipEq1 })
+      const mockMatch = jest.fn().mockReturnValue({ single: mockEquipSingle })
+      const mockEquipSelect = jest.fn().mockReturnValue({ match: mockMatch })
       mockSupabaseClient.from.mockReturnValueOnce({ select: mockEquipSelect })
+
+      // Mock find_shifts_by_location_and_date RPC - no shifts in range
+      mockSupabaseClient.rpc.mockResolvedValueOnce({
+        data: [],
+        error: null,
+      })
 
       const request = new NextRequest('http://localhost:3000/api/attendance/punch', {
         method: 'POST',
@@ -172,7 +174,9 @@ describe('/api/attendance/punch', () => {
 
       // Assert
       expect(response.status).toBe(400)
-      expect(data.error).toMatch(/Too far from venue: \d+m/)
+      // The error message will be "No shift found for today at this location"
+      // because find_shifts_by_location_and_date filters by distance
+      expect(data.error).toBe('No shift found for today at this location')
 
       // Verify distance calculation
       const distance = calculateDistance(
@@ -204,9 +208,8 @@ describe('/api/attendance/punch', () => {
         data: null,
         error: createSupabaseError('Equipment not found'),
       })
-      const mockNotFoundEq2 = jest.fn().mockReturnValue({ single: mockNotFoundSingle })
-      const mockNotFoundEq1 = jest.fn().mockReturnValue({ eq: mockNotFoundEq2 })
-      const mockNotFoundSelect = jest.fn().mockReturnValue({ eq: mockNotFoundEq1 })
+      const mockNotFoundMatch = jest.fn().mockReturnValue({ single: mockNotFoundSingle })
+      const mockNotFoundSelect = jest.fn().mockReturnValue({ match: mockNotFoundMatch })
       mockSupabaseClient.from.mockReturnValueOnce({ select: mockNotFoundSelect })
 
       const request = new NextRequest('http://localhost:3000/api/attendance/punch', {
@@ -243,25 +246,19 @@ describe('/api/attendance/punch', () => {
         data: {
           id: 'equipment-1',
           venue_id: 'venue-1',
-          venues: HKT48_THEATER_COORDS,
+          name: 'PA Console',
         },
         error: null,
       })
-      const mockEquip2Eq2 = jest.fn().mockReturnValue({ single: mockEquip2Single })
-      const mockEquip2Eq1 = jest.fn().mockReturnValue({ eq: mockEquip2Eq2 })
-      const mockEquip2Select = jest.fn().mockReturnValue({ eq: mockEquip2Eq1 })
+      const mockEquip2Match = jest.fn().mockReturnValue({ single: mockEquip2Single })
+      const mockEquip2Select = jest.fn().mockReturnValue({ match: mockEquip2Match })
       mockSupabaseClient.from.mockReturnValueOnce({ select: mockEquip2Select })
 
-      // Mock shift lookup returning no data
-      const mockNoShiftSingle = jest.fn().mockResolvedValue({
-        data: null,
-        error: createSupabaseError('No shift found'),
+      // Mock find_shifts_by_location_and_date RPC - no shifts found
+      mockSupabaseClient.rpc.mockResolvedValueOnce({
+        data: [],
+        error: null,
       })
-      const mockNoShiftLte = jest.fn().mockReturnValue({ single: mockNoShiftSingle })
-      const mockNoShiftGte = jest.fn().mockReturnValue({ lte: mockNoShiftLte })
-      const mockNoShiftEq = jest.fn().mockReturnValue({ gte: mockNoShiftGte })
-      const mockNoShiftSelect = jest.fn().mockReturnValue({ eq: mockNoShiftEq })
-      mockSupabaseClient.from.mockReturnValueOnce({ select: mockNoShiftSelect })
 
       const request = new NextRequest('http://localhost:3000/api/attendance/punch', {
         method: 'POST',
@@ -274,7 +271,7 @@ describe('/api/attendance/punch', () => {
 
       // Assert
       expect(response.status).toBe(400)
-      expect(data.error).toBe('No shift found for today at this venue')
+      expect(data.error).toBe('No shift found for today at this location')
     })
   })
 
@@ -303,7 +300,7 @@ describe('/api/attendance/punch', () => {
       expect(response.status).toBe(200)
       expect(data.ok).toBe(true)
       expect(mockSupabaseClient.rpc).toHaveBeenCalledWith(
-        'attendance_punch',
+        'process_attendance_punch',
         expect.objectContaining({
           p_purpose: 'checkin',
         })
@@ -334,7 +331,7 @@ describe('/api/attendance/punch', () => {
       expect(response.status).toBe(200)
       expect(data.ok).toBe(true)
       expect(mockSupabaseClient.rpc).toHaveBeenCalledWith(
-        'attendance_punch',
+        'process_attendance_punch',
         expect.objectContaining({
           p_purpose: 'checkout',
         })
@@ -475,38 +472,43 @@ describe('/api/attendance/punch', () => {
     // Mock equipment lookup
     mockSupabaseClient.from.mockReturnValueOnce({
       select: jest.fn().mockReturnValue({
-        eq: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({
-              data: {
-                id: 'equipment-1',
-                venue_id: 'venue-1',
-                venues: HKT48_THEATER_COORDS,
-              },
-              error: null,
-            }),
+        match: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({
+            data: {
+              id: 'equipment-1',
+              venue_id: 'venue-1',
+              name: 'PA Console',
+            },
+            error: null,
           }),
         }),
       }),
     })
 
-    // Mock shift lookup
-    const mockHelperShiftSingle = jest.fn().mockResolvedValue({
-      data: { id: 'shift-1', events: { venue_id: 'venue-1' } },
+    // Mock find_shifts_by_location_and_date RPC
+    mockSupabaseClient.rpc.mockResolvedValueOnce({
+      data: [{
+        shift_id: 'shift-1',
+        event_name: 'Test Event',
+        venue_name: 'HKT48 Theater',
+        distance_meters: 50,
+        start_at: new Date().toISOString(),
+        end_at: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
+      }],
       error: null,
     })
-    const mockHelperShiftLte = jest.fn().mockReturnValue({ single: mockHelperShiftSingle })
-    const mockHelperShiftGte = jest.fn().mockReturnValue({ lte: mockHelperShiftLte })
-    const mockHelperShiftEq = jest.fn().mockReturnValue({ gte: mockHelperShiftGte })
-    const mockHelperShiftSelect = jest.fn().mockReturnValue({ eq: mockHelperShiftEq })
-    mockSupabaseClient.from.mockReturnValueOnce({ select: mockHelperShiftSelect })
 
-    // Mock attendance_punch RPC
+    // Mock process_attendance_punch RPC
     mockSupabaseClient.rpc.mockResolvedValueOnce({
       data: {
         success: true,
-        attendance_id: 'attendance-1',
-        message: 'Attendance recorded successfully',
+        id: 'attendance-1',
+        staff_id: 'staff-1',
+        shift_id: 'shift-1',
+        checkin_at: new Date().toISOString(),
+        checkout_at: null,
+        status: 'pending',
+        distance_meters: 50,
       },
       error: null,
     })

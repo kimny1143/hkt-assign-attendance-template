@@ -55,88 +55,33 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // 認証チェック
-  const { data: { user } } = await supabase.auth.getUser();
+  // セッションの更新のみ（認可はRLSに委譲）
+  const { data: { session } } = await supabase.auth.getSession();
 
   // パブリックパス（認証不要）
-  const publicPaths = ['/login', '/api/auth/login', '/api/auth/logout'];
-  if (publicPaths.includes(request.nextUrl.pathname)) {
+  const publicPaths = ['/login', '/api/auth/login', '/api/auth/logout', '/api/health'];
+  const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path));
+
+  if (isPublicPath) {
     return response;
   }
 
-  // 未認証の場合
-  if (!user) {
+  // 保護されたパスへのアクセス制御（認証のみチェック）
+  if (!session) {
+    // APIルートの場合は401を返す
+    if (request.nextUrl.pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    // それ以外はログインページへリダイレクト
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // トップページへのアクセスの場合、ロールに応じてリダイレクト
+  // トップページへのアクセスの場合、デフォルトページへリダイレクト
+  // （RLSによりロール判定は不要、クライアント側で処理）
   if (request.nextUrl.pathname === '/') {
-    // staffテーブルからロール情報を取得
-    const { data: staffData } = await supabase
-      .from('staff')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    let userRole = 'staff';
-
-    if (staffData) {
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('staff_id', staffData.id)
-        .single();
-
-      if (roleData) {
-        userRole = roleData.role;
-      }
-    }
-
-    // ロールに応じてリダイレクト
-    if (['admin', 'manager'].includes(userRole)) {
-      return NextResponse.redirect(new URL('/admin', request.url));
-    } else {
-      return NextResponse.redirect(new URL('/punch', request.url));
-    }
-  }
-
-  // admin配下のパスへのアクセス制御
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    // まずstaffテーブルからstaff_idを取得
-    const { data: staffData } = await supabase
-      .from('staff')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    let userRole = 'staff'; // デフォルトはstaff
-
-    if (staffData) {
-      // ユーザーのロールを取得
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('staff_id', staffData.id)
-        .single();
-
-      if (roleData) {
-        userRole = roleData.role;
-      }
-
-      console.log('Middleware - User ID:', user.id);
-      console.log('Middleware - Staff ID:', staffData.id);
-      console.log('Middleware - Role:', userRole);
-    }
-
-    // admin, manager以外はアクセス拒否
-    if (!['admin', 'manager'].includes(userRole)) {
-      // staffは打刻ページへ
-      if (userRole === 'staff') {
-        return NextResponse.redirect(new URL('/punch', request.url));
-      }
-      // その他はログインページへ
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
+    // 管理者判定は行わず、一旦punchページへ
+    // クライアント側でロールに応じたリダイレクトを行う
+    return NextResponse.redirect(new URL('/punch', request.url));
   }
 
   return response;

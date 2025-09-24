@@ -1,114 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
-import { createServerClient } from '@supabase/ssr'
-import { getCurrentJST, toSupabaseTimestamp } from '@/lib/utils/date'
+import { createClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-        set() {},
-        remove() {}
-      }
+    const supabase = await createClient()
+
+    // 認証確認
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-  )
 
-  // 認証確認
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+    // Use the optimized function to get today's assignments
+    const { data: assignments, error } = await supabase.rpc('get_user_today_assignments', {
+      p_user_id: user.id
+    })
 
-  // スタッフ情報取得
-  console.log('Fetching staff for user_id:', user.id)
-  const { data: staff, error: staffError } = await supabase
-    .from('staff')
-    .select('id')
-    .eq('user_id', user.id)
-    .single()
+    if (error) {
+      console.error('Error fetching assignments:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
 
-  if (staffError || !staff) {
-    console.error('Staff not found:', staffError)
-    return NextResponse.json({ error: 'Staff not found', details: staffError?.message }, { status: 404 })
-  }
-  console.log('Found staff:', staff)
+    // Transform the data to match the expected format
+    const formattedAssignments = (assignments || []).map((a: any) => ({
+      id: a.assignment_id,
+      status: a.assignment_status,
+      shifts: {
+        id: a.shift_id,
+        start_at: a.shift_start_jst,
+        end_at: a.shift_end_jst,
+        events: {
+          id: null, // Not included in the view for simplicity
+          name: a.event_name,
+          venues: {
+            id: null, // Not included in the view for simplicity
+            name: a.venue_name,
+            address: a.venue_address
+          }
+        }
+      },
+      work_status: a.work_status,
+      work_hours: a.work_hours
+    }))
 
-  // 本日のアサインメント取得（JST基準）
-  const todayStr = getCurrentJST('DATE')
-
-  // JSTの日付をUTCに変換してフィルタリング
-  const startOfDayJST = `${todayStr}T00:00:00`
-  const endOfDayJST = `${todayStr}T23:59:59`
-  const startOfDayUTC = toSupabaseTimestamp(startOfDayJST)
-  const endOfDayUTC = toSupabaseTimestamp(endOfDayJST)
-
-  // まず本日のシフトを取得
-  console.log('Fetching today shifts for date:', todayStr, 'UTC range:', startOfDayUTC, '-', endOfDayUTC)
-  const { data: todayShifts, error: shiftError } = await supabase
-    .from('shifts')
-    .select('id')
-    .gte('start_at', startOfDayUTC)
-    .lte('start_at', endOfDayUTC)
-
-  if (shiftError) {
-    console.error('Shift fetch error:', shiftError)
-    return NextResponse.json({ error: shiftError.message }, { status: 500 })
-  }
-  console.log('Found shifts:', todayShifts)
-
-  const shiftIds = todayShifts?.map(s => s.id) || []
-
-  if (shiftIds.length === 0) {
-    return NextResponse.json({ assignments: [] })
-  }
-
-  // アサインメント取得
-  console.log('Fetching assignments for staff:', staff.id, 'shifts:', shiftIds)
-  const { data: assignments, error } = await supabase
-    .from('assignments')
-    .select(`
-      id,
-      status,
-      shifts!inner (
-        id,
-        start_at,
-        end_at,
-        events!inner (
-          id,
-          name,
-          venues!inner (
-            id,
-            name,
-            address
-          )
-        )
-      )
-    `)
-    .eq('staff_id', staff.id)
-    .in('shift_id', shiftIds)
-
-  if (error) {
-    console.error('Assignment fetch error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-  console.log('Found assignments:', assignments)
-
-  return NextResponse.json({ assignments: assignments || [] })
+    return NextResponse.json({ assignments: formattedAssignments })
   } catch (error: any) {
     console.error('Error in /api/assignments/today:', error)
     return NextResponse.json({
       error: 'Internal server error',
-      details: error?.message || 'Unknown error',
-      stack: error?.stack
+      details: error?.message || 'Unknown error'
     }, { status: 500 })
   }
 }

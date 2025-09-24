@@ -61,6 +61,16 @@ export const mockSupabaseClient = {
         data: getMockData(table),
         error: null,
       })),
+      match: jest.fn(() => ({
+        single: jest.fn(() =>
+          Promise.resolve({
+            data: getMockData(table)[0],
+            error: null,
+          })
+        ),
+        data: getMockData(table),
+        error: null,
+      })),
       data: getMockData(table),
       error: null,
     })),
