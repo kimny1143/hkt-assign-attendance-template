@@ -38,6 +38,7 @@ export async function POST(request: Request) {
     }
   );
 
+  let body: any;
   try {
     // 認証チェック
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -68,7 +69,8 @@ export async function POST(request: Request) {
     }
 
     // リクエストボディの検証
-    const body = await request.json();
+    body = await request.json();
+    console.log('Received request body:', JSON.stringify(body, null, 2));
     const validatedData = CreateIntegratedEventSchema.parse(body);
 
     // テンプレート使用の場合
@@ -189,6 +191,8 @@ export async function POST(request: Request) {
 
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error('Validation error:', error.errors);
+      console.error('Received body:', body);
       return NextResponse.json(
         { error: 'リクエストデータが不正です', details: error.errors },
         { status: 400 }

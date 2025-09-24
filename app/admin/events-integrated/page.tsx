@@ -218,16 +218,19 @@ export default function EventsIntegratedPage() {
 
     setSaving(true);
     try {
+      const requestBody = {
+        event: formData.event,
+        shifts: formData.use_template ? undefined : formData.shifts,
+        use_template: formData.use_template
+      };
+      console.log('Sending request body:', requestBody);
+
       const response = await fetch('/api/admin/events/integrated', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          event: formData.event,
-          shifts: formData.use_template ? undefined : formData.shifts,
-          use_template: formData.use_template
-        })
+        body: JSON.stringify(requestBody)
       });
 
       const result = await response.json();
