@@ -83,10 +83,11 @@ export async function POST(req: NextRequest) {
   const startOfDayUTC = toSupabaseTimestamp(startOfDayJST)
   const endOfDayUTC = toSupabaseTimestamp(endOfDayJST)
 
-  const { data: shift, error: shiftError } = await supabase
+  const { data: shifts, error: shiftError } = await supabase
     .from('shifts')
     .select(`
       id,
+      event_id,
       events!inner(
         venue_id
       )
@@ -94,11 +95,13 @@ export async function POST(req: NextRequest) {
     .eq('events.venue_id', equipment.venue_id)
     .gte('start_at', startOfDayUTC)
     .lte('start_at', endOfDayUTC)
-    .single()
 
-  if (shiftError || !shift) {
+  if (shiftError || !shifts || shifts.length === 0) {
     return NextResponse.json({ error: 'No shift found for today at this venue' }, { status: 400 })
   }
+
+  // 複数シフトがある場合は最初のものを使用
+  const shift = shifts[0]
 
   // 打刻記録を作成/更新
   const { data, error } = await supabase.rpc('attendance_punch', {
