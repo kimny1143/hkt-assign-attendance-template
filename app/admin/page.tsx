@@ -72,22 +72,14 @@ export default function AdminPage() {
             <p className="text-xs text-gray-500 mt-1">QRコード管理</p>
           </button>
 
-          {/* イベント管理 */}
+          {/* イベント・シフト統合管理 */}
           <button
-            onClick={() => router.push('/admin/events')}
-            className="bg-white rounded-lg shadow p-4 hover:shadow-lg transition-shadow text-center group">
-            <div className="text-3xl mb-2">📅</div>
-            <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600">イベント</h3>
-            <p className="text-xs text-gray-500 mt-1">作成・編集</p>
-          </button>
-
-          {/* シフト管理 */}
-          <button
-            onClick={() => router.push('/admin/shifts')}
-            className="bg-white rounded-lg shadow p-4 hover:shadow-lg transition-shadow text-center group">
-            <div className="text-3xl mb-2">🕐</div>
-            <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600">シフト</h3>
-            <p className="text-xs text-gray-500 mt-1">必要人数設定</p>
+            onClick={() => router.push('/admin/events-integrated')}
+            className="bg-white rounded-lg shadow p-4 hover:shadow-lg transition-shadow text-center group border-2 border-blue-500 relative">
+            <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">NEW</span>
+            <div className="text-3xl mb-2">🎯</div>
+            <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600">イベント管理</h3>
+            <p className="text-xs text-gray-500 mt-1">シフト統合型</p>
           </button>
 
           {/* スタッフ管理 */}
@@ -128,6 +120,7 @@ export default function AdminPage() {
             <li>• シフト管理（スキル別必要人数）</li>
             <li>• スタッフ管理（基本情報、スキル設定）</li>
             <li>• アサイン管理（シフト割り当て）</li>
+            <li className="text-blue-600 font-semibold">• 🆕 イベント・シフト統合管理（テンプレート機能付き）</li>
           </ul>
         </div>
 
